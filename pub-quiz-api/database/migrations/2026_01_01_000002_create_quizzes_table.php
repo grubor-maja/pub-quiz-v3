@@ -22,8 +22,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('min_team_members')->default(1);
             $table->unsignedTinyInteger('max_team_members')->default(6);
             $table->string('contact_phone')->nullable();
-            $table->string('cover_image_url')->nullable();
-            $table->string('instagram_post_url')->nullable();
+            $table->text('cover_image_url')->nullable();
+            $table->text('instagram_post_url')->nullable();
             $table->enum('status', ['published', 'draft', 'completed', 'cancelled'])->default('draft');
             $table->timestamps();
         });
