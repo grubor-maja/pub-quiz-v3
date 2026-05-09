@@ -1,0 +1,31 @@
+# Licni dnevnik - samo lokalno
+DEVLOG.md
+
+# Laravel
+pub-quiz-api/.env
+pub-quiz-api/.env.prod
+pub-quiz-api/vendor/
+pub-quiz-api/node_modules/
+pub-quiz-api/storage/app/public/
+pub-quiz-api/storage/logs/
+pub-quiz-api/bootstrap/cache/
+pub-quiz-api/.phpunit.result.cache
+
+# React / Node
+pub-quiz-ui/node_modules/
+pub-quiz-ui/dist/
+
+# Docker volumes & overrides
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code lokalna podesavanja
+.claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
