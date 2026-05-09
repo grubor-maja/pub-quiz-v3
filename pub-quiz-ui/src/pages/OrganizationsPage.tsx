@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Instagram, Trophy } from 'lucide-react'
+import { ExternalLink, Trophy } from 'lucide-react'
 import { fetchOrganizations } from '../api'
 
 export default function OrganizationsPage() {
@@ -47,7 +47,7 @@ export default function OrganizationsPage() {
                   <h2 className="text-sm font-medium text-zinc-100">{org.name}</h2>
                   {org.instagram_handle && (
                     <div className="flex items-center gap-1 text-xs text-zinc-500">
-                      <Instagram size={11} />
+                      <ExternalLink size={11} />
                       <span>@{org.instagram_handle}</span>
                     </div>
                   )}

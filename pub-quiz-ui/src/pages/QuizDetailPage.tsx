@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, Clock, MapPin, Users, Banknote, Phone, Instagram, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Banknote, Phone, ExternalLink, ArrowLeft } from 'lucide-react'
 import { fetchQuiz } from '../api'
 import { formatDate, formatPrice, formatTime } from '../lib/utils'
 
@@ -112,7 +112,7 @@ export default function QuizDetailPage() {
 
         {quiz.instagram_post_url && (
           <div className="flex items-center gap-3 text-sm">
-            <Instagram size={16} className="text-zinc-500 shrink-0" />
+            <ExternalLink size={16} className="text-zinc-500 shrink-0" />
             <a
               href={quiz.instagram_post_url}
               target="_blank"
