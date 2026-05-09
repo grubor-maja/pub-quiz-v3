@@ -60,7 +60,7 @@ class SyncInstagramPosts implements ShouldQueue
                     'image_url' => $post['displayUrl'] ?? null,
                     'owner_username' => $post['ownerUsername'] ?? null,
                     'location_name' => $post['locationName'] ?? null,
-                    'posted_at' => isset($post['timestamp']) ? date('Y-m-d H:i:s', $post['timestamp']) : null,
+                    'posted_at' => isset($post['timestamp']) ? date('Y-m-d H:i:s', strtotime((string) $post['timestamp'])) : null,
                     'raw_data' => $post,
                     'organization_id' => $org->id,
                     'status' => 'pending',

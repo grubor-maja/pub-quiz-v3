@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('instagram_imports', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('instagram_post_id')->unique();
-            $table->string('instagram_post_url')->nullable();
+            $table->text('instagram_post_url')->nullable();
             $table->string('short_code')->nullable();
             $table->text('caption')->nullable();
-            $table->string('image_url')->nullable();
+            $table->text('image_url')->nullable();
             $table->string('owner_username')->nullable();
             $table->string('location_name')->nullable();
             $table->timestamp('posted_at')->nullable();

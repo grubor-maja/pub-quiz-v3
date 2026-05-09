@@ -17,6 +17,7 @@ pub-quiz-ui/dist/
 
 # Docker volumes & overrides
 docker-compose.override.yml
+.env
 
 # OS
 .DS_Store

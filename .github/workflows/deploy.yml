@@ -1,0 +1,22 @@
+name: deploy to production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: deploy via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 157.245.74.186
+          username: deploy
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/pub-quiz-v3
+            git pull origin master
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml exec -T backend php artisan migrate --force
