@@ -28,6 +28,7 @@ export interface Quiz {
   instagram_post_url: string | null
   status: 'published' | 'draft' | 'completed' | 'cancelled'
   organization: Pick<Organization, 'id' | 'name' | 'slug' | 'logo_url' | 'instagram_handle' | 'description'>
+  is_favorited?: boolean
   created_at: string
   updated_at: string
 }
@@ -48,4 +49,35 @@ export interface QuizFilters {
   date_from?: string
   date_to?: string
   page?: number
+}
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  created_at: string
+}
+
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
+export interface RegisterPayload {
+  name: string
+  email: string
+  password: string
+  password_confirmation: string
+}
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
+export interface ResetPasswordPayload {
+  token: string
+  email: string
+  password: string
+  password_confirmation: string
 }

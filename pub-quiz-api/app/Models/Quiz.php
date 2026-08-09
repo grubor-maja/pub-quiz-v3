@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Quiz extends Model
@@ -33,6 +34,12 @@ class Quiz extends Model
     public function instagramImport(): HasOne
     {
         return $this->hasOne(InstagramImport::class);
+    }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favorites', 'quiz_id', 'user_id')
+            ->withTimestamps();
     }
 
     public function scopePublished($query)

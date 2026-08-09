@@ -1,8 +1,9 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, Clock, MapPin, Users, Banknote, Phone, ExternalLink, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft } from 'lucide-react'
 import { fetchQuiz } from '../api'
 import { formatDate, formatPrice, formatTime } from '../lib/utils'
+import HeartButton from '../components/HeartButton'
 
 export default function QuizDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -15,11 +16,18 @@ export default function QuizDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-zinc-800 rounded w-2/3" />
-          <div className="h-4 bg-zinc-800 rounded w-1/3" />
-          <div className="h-48 bg-zinc-800 rounded-xl mt-6" />
+      <div style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 480px) 1fr',
+          gap: 32,
+        }}>
+          <div style={{ aspectRatio: '1/1', background: 'var(--bg-surface)', borderRadius: 14 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ height: 26, background: 'var(--bg-surface)', borderRadius: 6, width: '70%' }} />
+            <div style={{ height: 14, background: 'var(--bg-surface)', borderRadius: 4, width: '40%' }} />
+            <div style={{ height: 200, background: 'var(--bg-surface)', borderRadius: 10, marginTop: 8 }} />
+          </div>
         </div>
       </div>
     )
@@ -27,113 +35,334 @@ export default function QuizDetailPage() {
 
   if (isError || !quiz) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center text-zinc-500">
+      <div style={{ padding: '80px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
         Kviz nije pronadjen.
-        <Link to="/" className="block mt-4 text-indigo-400 hover:text-indigo-300">Nazad na listu</Link>
+        <Link to="/" style={{ display: 'block', marginTop: 12, color: 'var(--accent-amber)' }}>
+          Nazad na listu
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-100 transition-colors mb-6">
-        <ArrowLeft size={14} />
-        Svi kvizovi
-      </Link>
-
-      {quiz.cover_image_url && (
-        <img
-          src={quiz.cover_image_url}
-          alt={quiz.title}
-          className="w-full h-56 object-cover rounded-xl mb-6"
-        />
-      )}
-
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <h1 className="text-xl font-semibold text-zinc-100 leading-snug">{quiz.title}</h1>
+    <div style={{ padding: '24px 32px 40px', maxWidth: 1180, margin: '0 auto' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '110px minmax(0, 440px) 1fr',
+        gridTemplateAreas: `
+          "back  title  ."
+          ".     image  info"
+          ".     desc   desc"
+        `,
+        columnGap: 24,
+        rowGap: 14,
+        alignItems: 'start',
+      }}>
+        {/* Back link - left rail */}
         <Link
-          to={`/organizacije/${quiz.organization.slug}`}
-          className="shrink-0 text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-zinc-100 px-3 py-1 rounded-full transition-colors"
+          to="/"
+          className="back-rail"
+          style={{
+            gridArea: 'back',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            padding: '6px 8px',
+            borderRadius: 7,
+            marginTop: 4,
+            whiteSpace: 'nowrap',
+          }}
         >
-          {quiz.organization.name}
+          <ArrowLeft size={13} />
+          Svi kvizovi
         </Link>
-      </div>
 
-      {quiz.description && (
-        <p className="text-zinc-400 text-sm mb-6 leading-relaxed">{quiz.description}</p>
-      )}
+        {/* Title + org badge - aligned above image (left) */}
+        <div style={{
+          gridArea: 'title',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}>
+          <h1 style={{
+            fontSize: 24,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em',
+            lineHeight: 1.2,
+            margin: 0,
+            textTransform: 'uppercase',
+          }}>
+            {quiz.title}
+          </h1>
+          <span style={{
+            fontSize: 11,
+            padding: '4px 9px',
+            borderRadius: 6,
+            background: 'var(--accent-amber-soft)',
+            color: 'var(--accent-amber)',
+            border: '0.5px solid rgba(233,184,74,0.25)',
+            whiteSpace: 'nowrap',
+          }}>
+            {quiz.organization.name}
+          </span>
+          <HeartButton
+            quizSlug={quiz.slug}
+            isFavorited={quiz.is_favorited ?? false}
+            size={16}
+          />
+        </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
-        {quiz.quiz_date && (
-          <div className="flex items-center gap-3 text-sm">
-            <Calendar size={16} className="text-zinc-500 shrink-0" />
-            <span className="text-zinc-300">{formatDate(quiz.quiz_date)}</span>
-          </div>
-        )}
-
-        {quiz.quiz_time && (
-          <div className="flex items-center gap-3 text-sm">
-            <Clock size={16} className="text-zinc-500 shrink-0" />
-            <span className="text-zinc-300">{formatTime(quiz.quiz_time)}h</span>
-          </div>
-        )}
-
-        {quiz.location && (
-          <div className="flex items-start gap-3 text-sm">
-            <MapPin size={16} className="text-zinc-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-zinc-300">{quiz.location}</span>
-              {quiz.address && <span className="text-zinc-500 block">{quiz.address}</span>}
+        {/* Image - 4:5 portrait like Instagram */}
+        <div style={{
+          gridArea: 'image',
+          position: 'relative',
+          aspectRatio: '4/5',
+          borderRadius: 14,
+          overflow: 'hidden',
+          background: 'var(--bg-surface)',
+          border: '0.5px solid var(--border-subtle)',
+        }}>
+          {quiz.cover_image_url ? (
+            <img
+              src={quiz.cover_image_url}
+              alt={quiz.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)',
+              fontSize: 13,
+            }}>
+              Bez slike
             </div>
+          )}
+        </div>
+
+        {/* Right: Info */}
+        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Info card */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '0.5px solid var(--border-subtle)',
+            borderRadius: 12,
+            padding: 4,
+          }}>
+            {quiz.quiz_date && (
+              <InfoRow icon={<Calendar size={14} />} label="Datum" value={formatDate(quiz.quiz_date)} />
+            )}
+            {quiz.quiz_time && (
+              <InfoRow icon={<Clock size={14} />} label="Vreme" value={`${formatTime(quiz.quiz_time)}h`} />
+            )}
+            {(quiz.location || quiz.address) && (
+              <InfoRow
+                icon={<MapPin size={14} />}
+                label="Lokacija"
+                value={quiz.location ?? ''}
+                sub={quiz.address ?? undefined}
+              />
+            )}
+            <InfoRow
+              icon={<Coins size={14} />}
+              label="Kotizacija"
+              value={`${formatPrice(quiz.entry_fee)} po timu`}
+            />
+            <InfoRow
+              icon={<Users size={14} />}
+              label="Tim"
+              value={`${quiz.min_team_members}-${quiz.max_team_members} clanova`}
+            />
+            {quiz.contact_phone && (
+              <InfoRow
+                icon={<Phone size={14} />}
+                label="Kontakt"
+                value={quiz.contact_phone}
+                href={`tel:${quiz.contact_phone}`}
+              />
+            )}
+            {quiz.instagram_post_url && (
+              <InfoRow
+                icon={<ExternalLink size={14} />}
+                label="Instagram"
+                value="Pogledaj objavu"
+                href={quiz.instagram_post_url}
+                external
+                last
+              />
+            )}
           </div>
-        )}
 
-        <div className="flex items-center gap-3 text-sm">
-          <Banknote size={16} className="text-zinc-500 shrink-0" />
-          <span className="text-zinc-300">{formatPrice(quiz.entry_fee)} po timu</span>
-        </div>
-
-        <div className="flex items-center gap-3 text-sm">
-          <Users size={16} className="text-zinc-500 shrink-0" />
-          <span className="text-zinc-300">{quiz.min_team_members}-{quiz.max_team_members} clanova po timu</span>
-        </div>
-
-        {quiz.contact_phone && (
-          <div className="flex items-center gap-3 text-sm">
-            <Phone size={16} className="text-zinc-500 shrink-0" />
+          {quiz.contact_phone && (
             <a
               href={`tel:${quiz.contact_phone}`}
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="btn-amber"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '13px 16px',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
             >
-              {quiz.contact_phone}
+              <Phone size={14} />
+              Prijavi tim: {quiz.contact_phone}
             </a>
-          </div>
-        )}
+          )}
+        </div>
 
-        {quiz.instagram_post_url && (
-          <div className="flex items-center gap-3 text-sm">
-            <ExternalLink size={16} className="text-zinc-500 shrink-0" />
-            <a
-              href={quiz.instagram_post_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
-            >
-              Instagram post
-            </a>
+        {/* Description - inside grid, spans image+info cols so it aligns with image on left */}
+        {quiz.description && (
+          <div style={{
+            gridArea: 'desc',
+            marginTop: 14,
+            padding: '20px 22px',
+            background: 'var(--bg-surface)',
+            border: '0.5px solid var(--border-subtle)',
+            borderRadius: 12,
+          }}>
+            <Description text={quiz.description} />
           </div>
         )}
       </div>
+    </div>
+  )
+}
 
-      {quiz.contact_phone && (
-        <a
-          href={`tel:${quiz.contact_phone}`}
-          className="mt-6 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+function Description({ text }: { text: string }) {
+  // Split by single \n - Instagram caption uses single newlines for line breaks
+  const lines = text.split('\n')
+  const paragraphs: string[][] = [[]]
+  for (const line of lines) {
+    if (line.trim() === '') {
+      if (paragraphs[paragraphs.length - 1].length > 0) paragraphs.push([])
+    } else {
+      paragraphs[paragraphs.length - 1].push(line)
+    }
+  }
+  const blocks = paragraphs.filter(p => p.length > 0)
+
+  // Separate hashtag block (final paragraph of mostly hashtags)
+  const last = blocks[blocks.length - 1]?.join(' ') ?? ''
+  const hashtagCount = (last.match(/#\w+/g) ?? []).length
+  const isLastHashtags = hashtagCount >= 3 && hashtagCount / Math.max(last.split(/\s+/).length, 1) > 0.5
+
+  const contentBlocks = isLastHashtags ? blocks.slice(0, -1) : blocks
+  const hashtagBlock = isLastHashtags ? blocks[blocks.length - 1] : null
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {contentBlocks.map((para, i) => (
+        <p
+          key={i}
+          style={{
+            fontSize: 13.5,
+            lineHeight: 1.7,
+            color: 'var(--text-secondary)',
+            margin: 0,
+            whiteSpace: 'pre-wrap',
+          }}
         >
-          <Phone size={15} />
-          Prijavi se: {quiz.contact_phone}
-        </a>
+          {para.join('\n')}
+        </p>
+      ))}
+      {hashtagBlock && (
+        <div style={{
+          marginTop: 6,
+          paddingTop: 14,
+          borderTop: '0.5px solid var(--border-subtle)',
+          fontSize: 11.5,
+          color: 'var(--text-muted)',
+          lineHeight: 1.6,
+          wordBreak: 'break-word',
+        }}>
+          {hashtagBlock.join(' ')}
+        </div>
       )}
+    </div>
+  )
+}
+
+function InfoRow({
+  icon, label, value, sub, href, external, last,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  sub?: string
+  href?: string
+  external?: boolean
+  last?: boolean
+}) {
+  const valueEl = href ? (
+    <a
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener noreferrer' : undefined}
+      style={{
+        fontSize: 13,
+        color: 'var(--accent-amber)',
+        textDecoration: 'none',
+        fontWeight: 500,
+      }}
+    >
+      {value}
+    </a>
+  ) : (
+    <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{value}</span>
+  )
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 12,
+      padding: '11px 12px',
+      borderBottom: last ? 'none' : '0.5px solid var(--border-subtle)',
+    }}>
+      <div style={{
+        width: 28,
+        height: 28,
+        borderRadius: 7,
+        background: 'rgba(255,255,255,0.03)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--accent-amber)',
+        flexShrink: 0,
+        marginTop: 1,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 10,
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: 2,
+        }}>
+          {label}
+        </div>
+        {valueEl}
+        {sub && (
+          <div style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
+            {sub}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+:root {
+  --bg-base:     #0B0B10;
+  --bg-side:     #0E0E14;
+  --bg-surface:  #14141B;
+  --bg-elevated: #1F1F2A;
+  --text-primary:   #EDEAE3;
+  --text-secondary: rgba(237,234,227,0.55);
+  --text-tertiary:  rgba(237,234,227,0.4);
+  --text-muted:     rgba(237,234,227,0.35);
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.08);
+  --border-strong:  rgba(255,255,255,0.1);
+  --accent-amber:      #E9B84A;
+  --accent-amber-soft: rgba(233,184,74,0.15);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,9 +23,161 @@
 }
 
 body {
-  background-color: #09090b;
-  color: #fafafa;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2035; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2e3060; }
+
+select { color-scheme: dark; }
+option { background: #1F1F2A; color: #EDEAE3; }
+
+.quiz-card {
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.quiz-card:hover {
+  border-color: rgba(255,255,255,0.18) !important;
+  transform: translateY(-2px);
+}
+
+.btn-primeni {
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.btn-primeni:not(:disabled):hover {
+  background: #f0c560 !important;
+}
+
+.back-rail {
+  transition: background 0.12s, color 0.12s;
+}
+.back-rail:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary) !important;
+}
+
+.org-card {
+  transition: border-color 0.18s, transform 0.18s;
+}
+.org-card:hover {
+  border-color: rgba(255,255,255,0.18) !important;
+  transform: translateY(-2px);
+}
+
+.org-ig-link {
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.org-ig-link:hover {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Dragon logo */
+@keyframes dragon-bob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25%       { transform: translateY(-6px) rotate(-1.5deg); }
+  75%       { transform: translateY(-3px) rotate(1deg); }
+}
+
+.dragon-bob {
+  animation: dragon-bob 1.8s ease-in-out infinite;
+}
+
+@keyframes loading-dot-pulse {
+  0%   { transform: scale(0.75); background-color: #E9B84A; opacity: 0.3; }
+  33%  { transform: scale(1);    background-color: #7B68EE; opacity: 1; }
+  66%  { transform: scale(0.85); background-color: #E9B84A; opacity: 0.6; }
+  100% { transform: scale(0.75); background-color: #E9B84A; opacity: 0.3; }
+}
+
+.loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: loading-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.sg {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+/* Sidebar nav */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s;
+  color: var(--text-secondary);
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-primary);
+}
+.nav-item.active {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  background: var(--accent-amber);
+  border-radius: 0 2px 2px 0;
+}
+
+.btn-amber {
+  background-color: #E9B84A;
+  color: #0E0E13;
+  transition: background-color 0.15s ease;
+}
+.btn-amber:hover {
+  background-color: #f0c560;
+}
+.btn-amber:active {
+  background-color: #d8a73c;
+}
+
+/* Custom Select dropdown items */
+.cs-item {
+  transition: background 0.1s;
+}
+.cs-item:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Custom Date Picker */
+.cdp-day:not(:disabled):hover {
+  background: rgba(255,255,255,0.06) !important;
+}
+.cdp-nav:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--text-primary) !important;
+}
+.cdp-footer:hover {
+  background: rgba(255,255,255,0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Fetching overlay - subtle opacity dim */
+.is-fetching {
+  opacity: 0.55;
+  transition: opacity 0.15s;
+  pointer-events: none;
 }

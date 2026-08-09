@@ -17,6 +17,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 COPY docker/backend/apache.conf /etc/apache2/sites-available/000-default.conf
 
 RUN chown -R www-data:www-data storage bootstrap/cache && \
-    chmod -R 775 storage bootstrap/cache
+    chmod -R 775 storage bootstrap/cache && \
+    php artisan storage:link --quiet 2>/dev/null || true
 
 EXPOSE 80

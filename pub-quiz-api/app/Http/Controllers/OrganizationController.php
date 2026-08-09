@@ -18,8 +18,17 @@ class OrganizationController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $organization = Organization::where('slug', $slug)->firstOrFail();
+        $organization = Organization::where('slug', $slug)
+            ->withCount('publishedQuizzes')
+            ->firstOrFail();
 
-        return response()->json($organization);
+        $quizzes = $organization->publishedQuizzes()
+            ->orderBy('quiz_date', 'desc')
+            ->get();
+
+        return response()->json([
+            'organization' => $organization,
+            'quizzes' => $quizzes,
+        ]);
     }
 }

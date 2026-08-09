@@ -1,64 +1,153 @@
-import { Calendar, Clock, MapPin, Users, Banknote } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { formatDate, formatPrice, formatTime } from '../lib/utils'
+import { Clock, Coins, Users, Calendar } from 'lucide-react'
+import { formatTime, formatPrice } from '../lib/utils'
 import type { Quiz } from '../types'
+import HeartButton from './HeartButton'
 
-interface Props {
-  quiz: Quiz
+const FALLBACK_GRADIENTS = [
+  'linear-gradient(135deg, #2A1F1F 0%, #3D2A1F 100%)',
+  'linear-gradient(135deg, #1F2A2F 0%, #1F3540 100%)',
+  'linear-gradient(135deg, #2A1F35 0%, #1F1F3D 100%)',
+  'linear-gradient(135deg, #1F2F22 0%, #1F4030 100%)',
+  'linear-gradient(135deg, #2F1F2A 0%, #401F35 100%)',
+  'linear-gradient(135deg, #2A2A1F 0%, #3D3520 100%)',
+]
+
+function formatDateBadge(dateStr: string) {
+  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00')
+  const weekday = d.toLocaleDateString('sr-Latn-RS', { weekday: 'short' })
+    .replace('.', '')
+    .replace(/^\w/, c => c.toUpperCase())
+  const day = d.getDate()
+  const month = d.toLocaleDateString('sr-Latn-RS', { month: 'short' }).replace('.', '')
+  return `${weekday} · ${day}. ${month}`
 }
 
-export default function QuizCard({ quiz }: Props) {
+function cleanTitle(t: string) {
+  return t.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()
+}
+
+const badge: React.CSSProperties = {
+  position: 'absolute',
+  top: 9,
+  backdropFilter: 'blur(8px)',
+  background: 'rgba(11,11,16,0.85)',
+  border: '0.5px solid var(--border-strong)',
+  borderRadius: 6,
+  padding: '4px 8px',
+  fontSize: 10,
+  fontWeight: 500,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 5,
+}
+
+export default function QuizCard({ quiz }: { quiz: Quiz }) {
+  const gradientIndex = quiz.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % FALLBACK_GRADIENTS.length
+  const gradient = FALLBACK_GRADIENTS[gradientIndex] ?? FALLBACK_GRADIENTS[0]
+
   return (
     <Link
       to={`/kvizovi/${quiz.slug}`}
-      className="block bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 hover:bg-zinc-800/60 transition-all"
+      className="quiz-card"
+      style={{
+        display: 'block',
+        background: 'var(--bg-surface)',
+        border: '0.5px solid var(--border-subtle)',
+        borderRadius: 12,
+        overflow: 'hidden',
+        textDecoration: 'none',
+      }}
     >
-      {quiz.cover_image_url && (
-        <img
-          src={quiz.cover_image_url}
-          alt={quiz.title}
-          className="w-full h-40 object-cover rounded-lg mb-4"
-        />
-      )}
+      {/* Image */}
+      <div style={{ position: 'relative', aspectRatio: '4/5', overflow: 'hidden' }}>
+        {quiz.cover_image_url ? (
+          <img
+            src={quiz.cover_image_url}
+            alt={quiz.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: '100%', background: gradient }} />
+        )}
 
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <h3 className="text-base font-medium text-zinc-100 leading-snug">{quiz.title}</h3>
-        <span className="shrink-0 text-xs bg-zinc-800 border border-zinc-700 text-zinc-400 px-2 py-0.5 rounded-full">
+        {quiz.quiz_date && (
+          <span style={{ ...badge, left: 9, color: 'var(--accent-amber)' }}>
+            <Calendar size={10} />
+            {formatDateBadge(quiz.quiz_date)}
+          </span>
+        )}
+
+        <span style={{ ...badge, right: 9, color: 'rgba(237,234,227,0.7)' }}>
           {quiz.organization.name}
         </span>
+
+        <div style={{ position: 'absolute', bottom: 9, right: 9 }}>
+          <HeartButton
+            quizSlug={quiz.slug}
+            isFavorited={quiz.is_favorited ?? false}
+            size={16}
+          />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        {quiz.quiz_date && (
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
-            <Calendar size={14} className="text-zinc-500 shrink-0" />
-            <span>{formatDate(quiz.quiz_date)}</span>
-            {quiz.quiz_time && (
-              <>
-                <Clock size={14} className="text-zinc-500 ml-1 shrink-0" />
-                <span>{formatTime(quiz.quiz_time)}h</span>
-              </>
-            )}
-          </div>
-        )}
+      {/* Body */}
+      <div style={{ padding: '13px 14px 14px' }}>
+        <h3 style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          margin: '0 0 11px',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          textTransform: 'uppercase',
+          letterSpacing: '0.01em',
+        }}>
+          {cleanTitle(quiz.title)}
+        </h3>
 
-        {quiz.location && (
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
-            <MapPin size={14} className="text-zinc-500 shrink-0" />
-            <span className="truncate">{quiz.location}{quiz.address ? `, ${quiz.address}` : ''}</span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-4 pt-1">
-          <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-            <Banknote size={14} className="text-zinc-500" />
-            <span>{formatPrice(quiz.entry_fee)}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-            <Users size={14} className="text-zinc-500" />
-            <span>{quiz.min_team_members}-{quiz.max_team_members} clanova</span>
-          </div>
+        {/* Meta row */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          paddingTop: 10,
+          borderTop: '0.5px solid var(--border-subtle)',
+          fontSize: 10.5,
+          color: 'var(--text-secondary)',
+          marginBottom: 10,
+        }}>
+          {quiz.quiz_time && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Clock size={11} strokeWidth={1.7} />
+              {formatTime(quiz.quiz_time)}
+            </span>
+          )}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-amber)' }}>
+            <Coins size={11} strokeWidth={1.7} />
+            {formatPrice(quiz.entry_fee)}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Users size={11} strokeWidth={1.7} />
+            {quiz.min_team_members}-{quiz.max_team_members}
+          </span>
         </div>
+
+        {/* Info */}
+        <p style={{
+          fontSize: 10.5,
+          lineHeight: 1.5,
+          margin: 0,
+          color: quiz.description ? 'var(--text-secondary)' : 'var(--text-muted)',
+          fontStyle: quiz.description ? 'normal' : 'italic',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {quiz.description ?? 'Ne postoji info za ovaj kviz, pogledaj Instagram stranicu za vise detalja.'}
+        </p>
       </div>
     </Link>
   )

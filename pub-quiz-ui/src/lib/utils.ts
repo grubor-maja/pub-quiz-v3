@@ -8,12 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(dateStr: string | null): string {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
-  return date.toLocaleDateString('sr-RS', {
+  const formatted = date.toLocaleDateString('sr-Latn-RS', {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   })
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
 export function formatTime(timeStr: string | null): string {
@@ -23,5 +24,5 @@ export function formatTime(timeStr: string | null): string {
 
 export function formatPrice(amount: number | null): string {
   if (amount === null || amount === undefined) return 'Besplatno'
-  return `${amount.toLocaleString('sr-RS')} din`
+  return `${amount.toLocaleString('sr-Latn-RS')} din`
 }

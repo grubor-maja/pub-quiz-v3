@@ -1,159 +1,180 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search, Filter, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { fetchOrganizations, fetchQuizzes } from '../api'
 import QuizCard from '../components/QuizCard'
+import LoadingScreen from '../components/LoadingScreen'
+import Toolbar from '../components/Toolbar'
 import type { QuizFilters } from '../types'
 
 export default function HomePage() {
   const [filters, setFilters] = useState<QuizFilters>({})
   const [searchInput, setSearchInput] = useState('')
 
+  // auto-apply search with debounce
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters(f => ({ ...f, search: searchInput || undefined, page: 1 }))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
   const { data: orgs } = useQuery({
     queryKey: ['organizations'],
     queryFn: fetchOrganizations,
+    staleTime: 5 * 60 * 1000,
   })
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: ['quizzes', filters],
     queryFn: () => fetchQuizzes(filters),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
   })
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFilters(f => ({ ...f, search: searchInput, page: 1 }))
-  }
+  const hasFilters = filters.search || filters.org || filters.date_from || filters.date_to
+  const currentPage = filters.page ?? 1
 
   const clearFilters = () => {
     setFilters({})
     setSearchInput('')
   }
 
-  const hasFilters = filters.search || filters.org || filters.date_from || filters.date_to
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-zinc-100 mb-1">Pub kvizovi</h1>
-        <p className="text-zinc-500 text-sm">Pronadji kviz u svom gradu</p>
+    <div style={{ padding: '24px 32px 32px' }}>
+      <Toolbar
+        searchInput={searchInput}
+        onSearchChange={setSearchInput}
+        initialOrg={filters.org ?? ''}
+        initialDateFrom={filters.date_from ?? ''}
+        initialDateTo={filters.date_to ?? ''}
+        onApplyFilters={(org, dateFrom, dateTo) =>
+          setFilters(f => ({
+            ...f,
+            org: org || undefined,
+            date_from: dateFrom || undefined,
+            date_to: dateTo || undefined,
+            page: 1,
+          }))
+        }
+        orgs={orgs}
+      />
+
+      {/* Section heading */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        marginBottom: 16,
+      }}>
+        <h2 className="sg" style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+          Predstojeći kvizovi
+        </h2>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+          {data ? `${data.total} rezultata · sortirano po datumu` : ''}
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              style={{
+                marginLeft: 10,
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <X size={10} /> ocisti
+            </button>
+          )}
+        </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Pretrazi kvizove..."
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors"
-          >
-            Trazi
-          </button>
-        </form>
-
-        <div className="flex gap-2">
-          <select
-            value={filters.org ?? ''}
-            onChange={e => setFilters(f => ({ ...f, org: e.target.value || undefined, page: 1 }))}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-zinc-600"
-          >
-            <option value="">Sve organizacije</option>
-            {orgs?.map(org => (
-              <option key={org.id} value={org.slug}>{org.name}</option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={filters.date_from ?? ''}
-            onChange={e => setFilters(f => ({ ...f, date_from: e.target.value || undefined, page: 1 }))}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-zinc-600"
-          />
-
-          <input
-            type="date"
-            value={filters.date_to ?? ''}
-            onChange={e => setFilters(f => ({ ...f, date_to: e.target.value || undefined, page: 1 }))}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-zinc-600"
-          />
-        </div>
-      </div>
-
-      {hasFilters && (
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={14} className="text-zinc-500" />
-          <span className="text-xs text-zinc-500">Aktivni filteri</span>
-          <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-100 transition-colors"
-          >
-            <X size={12} /> Ocisti
-          </button>
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 animate-pulse">
-              <div className="h-4 bg-zinc-800 rounded mb-3 w-3/4" />
-              <div className="h-3 bg-zinc-800 rounded mb-2 w-1/2" />
-              <div className="h-3 bg-zinc-800 rounded w-2/3" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {isError && (
-        <div className="text-center py-16 text-zinc-500">
+      {/* Content */}
+      {isLoading ? (
+        <LoadingScreen />
+      ) : isError ? (
+        <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
           Greska pri ucitavanju. Pokusajte ponovo.
         </div>
-      )}
-
-      {data && !isLoading && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs text-zinc-500">{data.total} kvizova</span>
+      ) : data?.data.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
+          Nema kvizova za zadate filtere.
+        </div>
+      ) : (
+        <div className={isFetching ? 'is-fetching' : undefined}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+            {data?.data.map(quiz => (
+              <QuizCard key={quiz.id} quiz={quiz} />
+            ))}
           </div>
 
-          {data.data.length === 0 ? (
-            <div className="text-center py-16 text-zinc-500">
-              Nema kvizova za zadate filtere.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.data.map(quiz => (
-                <QuizCard key={quiz.id} quiz={quiz} />
-              ))}
-            </div>
-          )}
+          {data && data.last_page > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 40 }}>
+              <PaginationBtn
+                onClick={() => setFilters(f => ({ ...f, page: currentPage - 1 }))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft size={14} />
+              </PaginationBtn>
 
-          {data.last_page > 1 && (
-            <div className="flex justify-center gap-2 mt-8">
               {Array.from({ length: data.last_page }, (_, i) => i + 1).map(page => (
-                <button
+                <PaginationBtn
                   key={page}
                   onClick={() => setFilters(f => ({ ...f, page }))}
-                  className={`w-8 h-8 text-sm rounded-lg transition-colors ${
-                    page === (filters.page ?? 1)
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 border border-zinc-800'
-                  }`}
+                  active={page === currentPage}
                 >
                   {page}
-                </button>
+                </PaginationBtn>
               ))}
+
+              <PaginationBtn
+                onClick={() => setFilters(f => ({ ...f, page: currentPage + 1 }))}
+                disabled={currentPage === data.last_page}
+              >
+                <ChevronRight size={14} />
+              </PaginationBtn>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
+  )
+}
+
+function PaginationBtn({
+  children, onClick, disabled, active,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  disabled?: boolean
+  active?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 7,
+        border: '0.5px solid var(--border-default)',
+        fontSize: 13,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.3 : 1,
+        background: active ? 'var(--accent-amber)' : 'rgba(255,255,255,0.03)',
+        color: active ? '#0B0B10' : 'var(--text-secondary)',
+        fontWeight: active ? 600 : 400,
+        boxShadow: active ? '0 0 16px rgba(233,184,74,0.25)' : 'none',
+      }}
+    >
+      {children}
+    </button>
   )
 }

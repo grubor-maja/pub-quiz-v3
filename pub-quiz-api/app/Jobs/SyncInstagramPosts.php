@@ -12,7 +12,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SyncInstagramPosts implements ShouldQueue
@@ -84,7 +86,7 @@ class SyncInstagramPosts implements ShouldQueue
             $caption = $import->caption ?? '';
             $postDate = $import->posted_at?->format('Y-m-d') ?? now()->format('Y-m-d');
 
-            $extracted = $extractor->extract($caption, $postDate);
+            $extracted = $extractor->extract($caption, $postDate, $import->image_url);
             $import->extracted_data = $extracted;
 
             if (empty($extracted['quiz_date'])) {
@@ -104,19 +106,24 @@ class SyncInstagramPosts implements ShouldQueue
                 $counter++;
             }
 
+            $localImageUrl = $import->image_url
+                ? $this->downloadAndStoreImage($import->image_url, $import->instagram_post_id)
+                : null;
+
             $quiz = Quiz::create([
                 'organization_id' => $org->id,
                 'title' => $title,
                 'slug' => $slug,
                 'quiz_date' => $extracted['quiz_date'],
                 'quiz_time' => $extracted['quiz_time'] ?? null,
-                'location' => $extracted['location'] ?? null,
+                'location' => $extracted['location'] ?? $import->location_name ?? null,
                 'address' => $extracted['address'] ?? null,
                 'entry_fee' => $extracted['entry_fee'] ?? null,
                 'min_team_members' => $extracted['min_team_members'] ?? 1,
                 'max_team_members' => $extracted['max_team_members'] ?? 6,
                 'contact_phone' => $extracted['contact_phone'] ?? null,
-                'cover_image_url' => $import->image_url,
+                'description' => $import->caption,
+                'cover_image_url' => $localImageUrl,
                 'instagram_post_url' => $import->instagram_post_url,
                 'status' => 'published',
             ]);
@@ -131,6 +138,33 @@ class SyncInstagramPosts implements ShouldQueue
             $import->error_message = $e->getMessage();
             $import->save();
             Log::error("Instagram sync: failed to process import {$import->id}", ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function downloadAndStoreImage(string $imageUrl, string $identifier): ?string
+    {
+        try {
+            $response = Http::timeout(30)->get($imageUrl);
+
+            if (!$response->successful()) {
+                Log::warning("Instagram sync: failed to download image for {$identifier}", ['status' => $response->status()]);
+                return null;
+            }
+
+            $contentType = $response->header('Content-Type') ?? '';
+            $extension = match (true) {
+                str_contains($contentType, 'png') => 'png',
+                str_contains($contentType, 'webp') => 'webp',
+                default => 'jpg',
+            };
+
+            $filename = "quiz-images/{$identifier}.{$extension}";
+            Storage::disk('public')->put($filename, $response->body());
+
+            return Storage::disk('public')->url($filename);
+        } catch (\Throwable $e) {
+            Log::warning("Instagram sync: exception downloading image for {$identifier}", ['error' => $e->getMessage()]);
+            return null;
         }
     }
 }

@@ -8,8 +8,9 @@ return [
         'dataset_id' => env('APIFY_DATASET_ID'),
     ],
 
-    'groq' => [
-        'api_key' => env('GROQ_API_KEY'),
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
         'enabled' => env('USE_AI_EXTRACTION', true),
     ],
 
