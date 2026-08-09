@@ -3,6 +3,7 @@ import { Heart, Mail, User as UserIcon } from 'lucide-react'
 import { fetchFavorites } from '../api'
 import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
+import { kvizWord } from '../lib/utils'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -16,7 +17,7 @@ export default function ProfilePage() {
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? '?'
 
   return (
-    <div style={{ padding: '32px 32px 40px', maxWidth: 1180, margin: '0 auto' }}>
+    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
       <h1 style={{
         fontSize: 22,
         fontWeight: 600,
@@ -79,12 +80,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Favorites section */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        marginBottom: 16,
-      }}>
+      <div className="section-heading">
         <h2 className="sg" style={{
           fontSize: 16,
           fontWeight: 500,
@@ -98,7 +94,7 @@ export default function ProfilePage() {
           Moji favoriti
         </h2>
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {favorites ? `${favorites.length} kvizova` : ''}
+          {favorites ? `${favorites.length} ${kvizWord(favorites.length)}` : ''}
         </span>
       </div>
 
@@ -123,7 +119,7 @@ export default function ProfilePage() {
           Jos uvek nemas omiljene kvizove. Klikni na srce na kartici kviza da ga dodas.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+        <div className="card-grid">
           {favorites.map(quiz => (
             <QuizCard key={quiz.id} quiz={{ ...quiz, is_favorited: true }} />
           ))}

@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, ExternalLink } from 'lucide-react'
 import { fetchOrganization } from '../api'
 import QuizCard from '../components/QuizCard'
 import type { Quiz } from '../types'
+import { kvizWord } from '../lib/utils'
 
 export default function OrganizationDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -16,7 +17,7 @@ export default function OrganizationDetailPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '32px', maxWidth: 1100, margin: '0 auto' }}>
+      <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -48,7 +49,7 @@ export default function OrganizationDetailPage() {
   const igUrl = org.instagram_handle ? `https://instagram.com/${org.instagram_handle}` : null
 
   return (
-    <div style={{ padding: '24px 32px 48px', maxWidth: 1180, margin: '0 auto' }}>
+    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
       <Link
         to="/organizacije"
         className="back-rail"
@@ -153,12 +154,7 @@ export default function OrganizationDetailPage() {
       </div>
 
       {/* Quizzes section */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'baseline',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-      }}>
+      <div className="section-heading">
         <h2 className="sg" style={{
           fontSize: 16,
           fontWeight: 500,
@@ -169,7 +165,7 @@ export default function OrganizationDetailPage() {
           Kvizovi
         </h2>
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {quizzes.length} {labelKviz(quizzes.length)}
+          {quizzes.length} {kvizWord(quizzes.length)}
         </span>
       </div>
 
@@ -183,11 +179,7 @@ export default function OrganizationDetailPage() {
           Nema objavljenih kvizova.
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 18,
-        }}>
+        <div className="card-grid">
           {quizzes.map((quiz: Quiz) => (
             <QuizCard
               key={quiz.id}
@@ -210,8 +202,3 @@ export default function OrganizationDetailPage() {
   )
 }
 
-function labelKviz(n: number): string {
-  if (n === 1) return 'kviz'
-  if (n >= 2 && n <= 4) return 'kviza'
-  return 'kvizova'
-}

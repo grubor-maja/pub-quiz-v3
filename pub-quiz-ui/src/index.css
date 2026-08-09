@@ -181,3 +181,224 @@ option { background: #1F1F2A; color: #EDEAE3; }
   transition: opacity 0.15s;
   pointer-events: none;
 }
+
+/* ---------------------------------------------------------------
+ * Responsive utilities
+ * Breakpoints:
+ *   mobile:  < 640px
+ *   tablet:  640px - 899px
+ *   desktop: >= 900px
+ * --------------------------------------------------------------- */
+
+/* App shell: sidebar + main. Collapses to single column below 900px. */
+.container-app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+@media (max-width: 899px) {
+  .container-app {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card grid for quiz listings. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+@media (max-width: 1200px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 899px) {
+  .card-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+}
+@media (max-width: 560px) {
+  .card-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* Toolbar - filters wrap and stack on mobile. */
+.toolbar-grid {
+  display: grid;
+  grid-template-columns: 1fr 180px 130px 130px auto;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+@media (max-width: 1024px) {
+  .toolbar-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .toolbar-grid > *:first-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 560px) {
+  .toolbar-grid {
+    grid-template-columns: 1fr;
+  }
+  .toolbar-grid > * {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Quiz detail page: 3-col desktop layout, single column on mobile. */
+.quiz-detail-grid {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 440px) 1fr;
+  grid-template-areas:
+    "back  title  ."
+    ".     image  info"
+    ".     desc   desc";
+  column-gap: 24px;
+  row-gap: 14px;
+  align-items: stretch;
+}
+@media (max-width: 899px) {
+  .quiz-detail-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "back"
+      "title"
+      "image"
+      "info"
+      "desc";
+    column-gap: 0;
+    row-gap: 14px;
+  }
+  .quiz-detail-image {
+    max-height: 60vh;
+    aspect-ratio: 4 / 5;
+  }
+  .quiz-detail-image img {
+    object-position: center;
+  }
+}
+
+/* Page container with responsive padding. */
+.page-pad {
+  padding: 24px 32px 32px;
+}
+@media (max-width: 640px) {
+  .page-pad {
+    padding: 16px 16px 24px;
+  }
+}
+
+/* Section heading row that stays readable on mobile. */
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* Sidebar drawer + backdrop for mobile. */
+.sidebar-desktop {
+  background: var(--bg-side);
+  border-right: 0.5px solid var(--border-subtle);
+  padding: 22px 14px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: visible;
+}
+@media (max-width: 899px) {
+  .sidebar-desktop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+  .sidebar-desktop.open {
+    transform: translateX(0);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+@media (max-width: 899px) {
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    z-index: 55;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Mobile top bar with hamburger. */
+.mobile-topbar {
+  display: none;
+}
+@media (max-width: 899px) {
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-side);
+    border-bottom: 0.5px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+}
+
+.hamburger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px solid var(--border-default);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.hamburger-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Prevent horizontal overflow on mobile. */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Prevent iOS zoom on focus by ensuring form inputs are >= 16px on mobile. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+

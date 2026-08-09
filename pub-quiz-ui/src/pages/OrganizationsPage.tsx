@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Building2, AtSign, ChevronRight } from 'lucide-react'
 import { fetchOrganizations } from '../api'
 import type { Organization } from '../types'
+import { kvizWord } from '../lib/utils'
 
 export default function OrganizationsPage() {
   const { data: orgs, isLoading } = useQuery({
@@ -12,7 +13,7 @@ export default function OrganizationsPage() {
   })
 
   return (
-    <div style={{ padding: '32px 32px 48px', maxWidth: 1100, margin: '0 auto' }}>
+    <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ marginBottom: 28, textAlign: 'center' }}>
         <h1 className="sg" style={{
           fontSize: 26,
@@ -122,7 +123,7 @@ function OrgCard({ org }: { org: Organization }) {
           border: '0.5px solid rgba(233,184,74,0.2)',
           marginTop: 'auto',
         }}>
-          {org.published_quizzes_count} {labelKviz(org.published_quizzes_count)}
+          {org.published_quizzes_count} {kvizWord(org.published_quizzes_count)}
         </div>
       )}
 
@@ -160,8 +161,3 @@ function OrgCardSkeleton() {
   )
 }
 
-function labelKviz(n: number): string {
-  if (n === 1) return 'kviz'
-  if (n >= 2 && n <= 4) return 'kviza'
-  return 'kvizova'
-}

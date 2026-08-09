@@ -6,6 +6,7 @@ import QuizCard from '../components/QuizCard'
 import LoadingScreen from '../components/LoadingScreen'
 import Toolbar from '../components/Toolbar'
 import type { QuizFilters } from '../types'
+import { rezultatWord } from '../lib/utils'
 
 export default function HomePage() {
   const [filters, setFilters] = useState<QuizFilters>({})
@@ -41,7 +42,7 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{ padding: '24px 32px 32px' }}>
+    <div className="page-pad">
       <Toolbar
         searchInput={searchInput}
         onSearchChange={setSearchInput}
@@ -61,17 +62,12 @@ export default function HomePage() {
       />
 
       {/* Section heading */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        marginBottom: 16,
-      }}>
+      <div className="section-heading">
         <h2 className="sg" style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
           Predstojeći kvizovi
         </h2>
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {data ? `${data.total} rezultata · sortirano po datumu` : ''}
+          {data ? `${data.total} ${rezultatWord(data.total)} · sortirano po datumu` : ''}
           {hasFilters && (
             <button
               onClick={clearFilters}
@@ -106,14 +102,14 @@ export default function HomePage() {
         </div>
       ) : (
         <div className={isFetching ? 'is-fetching' : undefined}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 18 }}>
+          <div className="card-grid">
             {data?.data.map(quiz => (
               <QuizCard key={quiz.id} quiz={quiz} />
             ))}
           </div>
 
           {data && data.last_page > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 40, flexWrap: 'wrap' }}>
               <PaginationBtn
                 onClick={() => setFilters(f => ({ ...f, page: currentPage - 1 }))}
                 disabled={currentPage === 1}

@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft } from 'lucide-react'
 import { fetchQuiz } from '../api'
-import { formatDate, formatPrice, formatTime } from '../lib/utils'
+import { formatDate, formatPrice, formatTime, clanWord } from '../lib/utils'
 import HeartButton from '../components/HeartButton'
 
 export default function QuizDetailPage() {
@@ -16,11 +16,11 @@ export default function QuizDetailPage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
+      <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 480px) 1fr',
-          gap: 32,
+          gap: 24,
         }}>
           <div style={{ aspectRatio: '1/1', background: 'var(--bg-surface)', borderRadius: 14 }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -45,19 +45,8 @@ export default function QuizDetailPage() {
   }
 
   return (
-    <div style={{ padding: '24px 32px 40px', maxWidth: 1180, margin: '0 auto' }}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '110px minmax(0, 440px) 1fr',
-        gridTemplateAreas: `
-          "back  title  ."
-          ".     image  info"
-          ".     desc   desc"
-        `,
-        columnGap: 24,
-        rowGap: 14,
-        alignItems: 'start',
-      }}>
+    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
+      <div className="quiz-detail-grid">
         {/* Back link - left rail */}
         <Link
           to="/"
@@ -89,13 +78,14 @@ export default function QuizDetailPage() {
           flexWrap: 'wrap',
         }}>
           <h1 style={{
-            fontSize: 24,
+            fontSize: 'clamp(18px, 4.5vw, 24px)',
             fontWeight: 700,
             color: 'var(--text-primary)',
             letterSpacing: '-0.01em',
             lineHeight: 1.2,
             margin: 0,
             textTransform: 'uppercase',
+            wordBreak: 'break-word',
           }}>
             {quiz.title}
           </h1>
@@ -118,7 +108,7 @@ export default function QuizDetailPage() {
         </div>
 
         {/* Image - 4:5 portrait like Instagram */}
-        <div style={{
+        <div className="quiz-detail-image" style={{
           gridArea: 'image',
           position: 'relative',
           aspectRatio: '4/5',
@@ -149,13 +139,17 @@ export default function QuizDetailPage() {
         </div>
 
         {/* Right: Info */}
-        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {/* Info card */}
+        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 18, height: '100%' }}>
+          {/* Info card - grows to match image height */}
           <div style={{
             background: 'var(--bg-surface)',
             border: '0.5px solid var(--border-subtle)',
             borderRadius: 12,
             padding: 4,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-around',
           }}>
             {quiz.quiz_date && (
               <InfoRow icon={<Calendar size={14} />} label="Datum" value={formatDate(quiz.quiz_date)} />
@@ -179,7 +173,7 @@ export default function QuizDetailPage() {
             <InfoRow
               icon={<Users size={14} />}
               label="Tim"
-              value={`${quiz.min_team_members}-${quiz.max_team_members} clanova`}
+              value={`${quiz.min_team_members}-${quiz.max_team_members} ${clanWord(quiz.max_team_members)}`}
             />
             {quiz.contact_phone && (
               <InfoRow

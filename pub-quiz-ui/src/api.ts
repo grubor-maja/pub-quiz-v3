@@ -86,7 +86,7 @@ export const authResetPassword = async (payload: ResetPasswordPayload): Promise<
 
 export const fetchFavorites = async (): Promise<Quiz[]> => {
   const { data } = await api.get('/favorites')
-  return data
+  return data.data ?? data
 }
 
 export const addFavorite = async (slug: string): Promise<{ message: string }> => {

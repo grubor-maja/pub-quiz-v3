@@ -47,12 +47,7 @@ export default function Toolbar({
   const orgOptions = (orgs ?? []).map(o => ({ value: o.slug, label: o.name }))
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr 180px 130px 130px auto',
-      gap: 8,
-      marginBottom: 22,
-    }}>
+    <div className="toolbar-grid">
 
       {/* Search */}
       <div style={inputBox}>

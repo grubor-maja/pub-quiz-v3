@@ -15,11 +15,17 @@ Route::get('/organizations/{slug}', [OrganizationController::class, 'show']);
 
 Route::post('/instagram/sync', [InstagramSyncController::class, 'sync']);
 
-// Auth
-Route::post('/auth/register', [Auth\AuthController::class, 'register']);
-Route::post('/auth/login', [Auth\AuthController::class, 'login']);
-Route::post('/auth/forgot-password', [Auth\AuthController::class, 'forgotPassword']);
-Route::post('/auth/reset-password', [Auth\AuthController::class, 'resetPassword']);
+// Auth - rate limited (throttle: max attempts per minute)
+Route::middleware('throttle:10,1')->group(function () {
+    Route::post('/auth/login', [Auth\AuthController::class, 'login']);
+    Route::post('/auth/register', [Auth\AuthController::class, 'register']);
+});
+
+// Password reset - stricter (email sending is expensive)
+Route::middleware('throttle:3,1')->group(function () {
+    Route::post('/auth/forgot-password', [Auth\AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [Auth\AuthController::class, 'resetPassword']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [Auth\AuthController::class, 'logout']);

@@ -40,30 +40,30 @@ function NavItem({ to, icon: Icon, label, count, active }: NavItemProps) {
   return <div className={cls}>{inner}</div>
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  isMobile?: boolean
+  open?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ isMobile = false, open = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
   const { user, logout, isLoading } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
     await logout()
+    onClose?.()
     navigate('/', { replace: true })
   }
 
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? ''
 
   return (
-    <aside style={{
-      background: 'var(--bg-side)',
-      borderRight: '0.5px solid var(--border-subtle)',
-      padding: '22px 14px',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'sticky',
-      top: 0,
-      height: '100vh',
-      overflow: 'visible',
-    }}>
+    <aside
+      className={`sidebar-desktop${isMobile && open ? ' open' : ''}`}
+      aria-hidden={isMobile && !open ? 'true' : undefined}
+    >
 
       {/* Brand */}
       <div style={{
@@ -80,12 +80,14 @@ export default function Sidebar() {
           style={{ width: 42, height: 42, objectFit: 'contain', flexShrink: 0 }}
         />
         <span style={{
-          fontFamily: "'Road Rage', system-ui, sans-serif",
-          fontSize: 22,
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontSize: 20,
+          fontWeight:300,
+          letterSpacing: '-0.01em',
           color: 'var(--text-primary)',
           lineHeight: 1,
         }}>
-          KoZnaZna
+          koZnaZna
         </span>
       </div>
 
