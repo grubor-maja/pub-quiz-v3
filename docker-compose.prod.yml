@@ -42,6 +42,24 @@ services:
     ports:
       - "5173:80"
 
+  scheduler:
+    image: pub-quiz-v3-backend
+    container_name: pubquiz-scheduler
+    restart: always
+    command: >
+      bash -c "while true; do
+        php artisan schedule:run --no-interaction >> /var/log/scheduler.log 2>&1;
+        sleep 60;
+      done"
+    volumes:
+      - ./pub-quiz-api/.env.prod:/var/www/html/.env:ro
+      - storage_data:/var/www/html/storage/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
 volumes:
   mysql_data:
   storage_data:
