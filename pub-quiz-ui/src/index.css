@@ -38,40 +38,48 @@ body {
 select { color-scheme: dark; }
 option { background: #1F1F2A; color: #EDEAE3; }
 
-.quiz-card {
-  transition: border-color 0.18s ease, transform 0.18s ease;
-}
-.quiz-card:hover {
-  border-color: rgba(255,255,255,0.18) !important;
-  transform: translateY(-2px);
+/* ---------------------------------------------------------------
+ * Global smooth transitions
+ * Standard easing: cubic-bezier(0.4, 0, 0.2, 1) - Material-esque
+ * Applied to any interactive element that changes on hover.
+ * --------------------------------------------------------------- */
+
+/* Default transition for common interactive selectors */
+a, button, [role="button"],
+.quiz-card, .org-card, .nav-item, .back-rail, .org-ig-link,
+.btn-amber, .btn-primeni, .cs-item, .cdp-day, .cdp-nav, .cdp-footer,
+.hamburger-btn, input, textarea, select {
+  transition:
+    background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-primeni {
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+.quiz-card:hover {
+  border-color: rgba(255,255,255,0.18) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
+
 .btn-primeni:not(:disabled):hover {
   background: #f0c560 !important;
 }
 
-.back-rail {
-  transition: background 0.12s, color 0.12s;
-}
 .back-rail:hover {
   background: rgba(255,255,255,0.04);
   color: var(--text-primary) !important;
 }
 
-.org-card {
-  transition: border-color 0.18s, transform 0.18s;
-}
 .org-card:hover {
   border-color: rgba(255,255,255,0.18) !important;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
 
-.org-ig-link {
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
 .org-ig-link:hover {
   background: var(--bg-elevated) !important;
   border-color: var(--border-strong) !important;
@@ -119,11 +127,10 @@ option { background: #1F1F2A; color: #EDEAE3; }
   margin-bottom: 2px;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.12s;
   color: var(--text-secondary);
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255,255,255,0.05);
   color: var(--text-primary);
 }
 .nav-item.active {
@@ -145,19 +152,17 @@ option { background: #1F1F2A; color: #EDEAE3; }
 .btn-amber {
   background-color: #E9B84A;
   color: #0E0E13;
-  transition: background-color 0.15s ease;
 }
 .btn-amber:hover {
   background-color: #f0c560;
+  box-shadow: 0 0 20px rgba(233,184,74,0.35);
 }
 .btn-amber:active {
   background-color: #d8a73c;
+  transform: translateY(0.5px);
 }
 
 /* Custom Select dropdown items */
-.cs-item {
-  transition: background 0.1s;
-}
 .cs-item:hover {
   background: rgba(255,255,255,0.05);
 }
@@ -178,8 +183,15 @@ option { background: #1F1F2A; color: #EDEAE3; }
 /* Fetching overlay - subtle opacity dim */
 .is-fetching {
   opacity: 0.55;
-  transition: opacity 0.15s;
   pointer-events: none;
+}
+
+/* Respect user's motion preferences - disable transitions if reduced-motion is set */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* ---------------------------------------------------------------
@@ -381,10 +393,11 @@ option { background: #1F1F2A; color: #EDEAE3; }
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Prevent horizontal overflow on mobile. */
+/* Prevent horizontal overflow on mobile.
+   Use 'clip' not 'hidden' so it doesn't break position:sticky on descendants. */
 html, body {
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Prevent iOS zoom on focus by ensuring form inputs are >= 16px on mobile. */
