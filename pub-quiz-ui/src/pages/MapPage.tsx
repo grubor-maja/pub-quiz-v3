@@ -192,15 +192,7 @@ export default function MapPage() {
         <select
           value={dateFilter}
           onChange={e => setDateFilter(e.target.value as DateFilter)}
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '0.5px solid var(--border-default)',
-            borderRadius: 8,
-            padding: '9px 12px',
-            fontSize: 13,
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-          }}
+          className="map-select"
         >
           <option value="all">Sve datume</option>
           <option value="today">Danas</option>
