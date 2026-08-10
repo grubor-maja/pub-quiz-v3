@@ -75,7 +75,7 @@ function AppShell() {
                   lineHeight: 1,
                 }}
               >
-                KoZnaZna
+                Ko<span style={{ color: 'var(--accent-amber)' }}>Zna</span><span style={{ color: '#7da347' }}>Zna</span>
               </span>
             </Link>
             <span style={{ width: 40 }} aria-hidden="true" />

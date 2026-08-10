@@ -88,14 +88,30 @@ class QuizController extends Controller
         return response()->json($quiz);
     }
 
-    public function map(): JsonResponse
+    public function map(Request $request): JsonResponse
     {
-        $quizzes = Quiz::published()
+        $query = Quiz::published()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('quiz_date', '>=', now()->subDay())
-            ->with('organization:id,name,slug,logo_url')
-            ->orderBy('quiz_date', 'asc')
+            ->with('organization:id,name,slug,logo_url');
+
+        if ($request->filled('org')) {
+            $slugs = array_filter(array_map('trim', explode(',', $request->input('org'))));
+            if (count($slugs) > 0) {
+                $query->whereHas('organization', fn ($q) => $q->whereIn('slug', $slugs));
+            }
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('quiz_date', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('quiz_date', '<=', $request->input('date_to'));
+        }
+
+        $quizzes = $query->orderBy('quiz_date', 'asc')
             ->get(['id', 'title', 'slug', 'quiz_date', 'quiz_time', 'location', 'address', 'entry_fee', 'latitude', 'longitude', 'cover_image_url', 'organization_id']);
 
         return response()->json(['data' => $quizzes]);

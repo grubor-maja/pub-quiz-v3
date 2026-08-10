@@ -83,12 +83,12 @@ export default function Sidebar({ isMobile = false, open = false, onClose }: Sid
         <span style={{
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
           fontSize: 20,
-          fontWeight:300,
+          fontWeight: 300,
           letterSpacing: '-0.01em',
           color: 'var(--text-primary)',
           lineHeight: 1,
         }}>
-          koZnaZna
+          ko<span style={{ color: 'var(--accent-amber)' }}>Zna</span><span style={{ color: '#7da347' }}>Zna</span>
         </span>
       </div>
 
