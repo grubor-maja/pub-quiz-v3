@@ -5,6 +5,7 @@ import { fetchOrganizations, fetchQuizzes } from '../api'
 import QuizCard from '../components/QuizCard'
 import LoadingScreen from '../components/LoadingScreen'
 import Toolbar from '../components/Toolbar'
+import UpcomingRow from '../components/UpcomingRow'
 import type { QuizFilters } from '../types'
 import { rezultatWord } from '../lib/utils'
 
@@ -60,6 +61,9 @@ export default function HomePage() {
         }
         orgs={orgs}
       />
+
+      {/* Upcoming horizontal scroller - shows first 10 quizzes */}
+      {!hasFilters && <UpcomingRow />}
 
       {/* Section heading */}
       <div className="section-heading">
