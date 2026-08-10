@@ -6,6 +6,7 @@ export interface Organization {
   logo_url: string | null
   description: string | null
   published_quizzes_count?: number
+  is_subscribed?: boolean
   created_at: string
   updated_at: string
 }
@@ -49,6 +50,7 @@ export interface QuizFilters {
   date_from?: string
   date_to?: string
   page?: number
+  subscribed?: boolean
 }
 
 export interface User {

@@ -40,6 +40,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function subscribedOrganizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_subscriptions', 'user_id', 'organization_id')
+            ->withTimestamps();
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));

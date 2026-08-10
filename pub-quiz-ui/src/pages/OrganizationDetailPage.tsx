@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Building2, ExternalLink } from 'lucide-react'
 import { fetchOrganization } from '../api'
 import QuizCard from '../components/QuizCard'
+import SubscribeButton from '../components/SubscribeButton'
 import type { Quiz } from '../types'
 import { kvizWord } from '../lib/utils'
 
@@ -113,31 +114,33 @@ export default function OrganizationDetailPage() {
           {org.name}
         </h1>
 
-        {/* Instagram link */}
-        {igUrl && (
-          <a
-            href={igUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="org-ig-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 7,
-              fontSize: 12.5,
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-              padding: '7px 13px',
-              borderRadius: 8,
-              border: '0.5px solid var(--border-default)',
-              background: 'var(--bg-surface)',
-              marginBottom: 16,
-            }}
-          >
-            <ExternalLink size={13} />
-            @{org.instagram_handle}
-          </a>
-        )}
+        {/* Subscribe + Instagram actions */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <SubscribeButton slug={org.slug} isSubscribed={org.is_subscribed ?? false} />
+          {igUrl && (
+            <a
+              href={igUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="org-ig-link"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                fontSize: 12.5,
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+                padding: '7px 13px',
+                borderRadius: 8,
+                border: '0.5px solid var(--border-default)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              <ExternalLink size={13} />
+              @{org.instagram_handle}
+            </a>
+          )}
+        </div>
 
         {/* Description */}
         {org.description && (

@@ -13,6 +13,15 @@ class OrganizationController extends Controller
             ->orderBy('name')
             ->get();
 
+        $user = auth('sanctum')->user();
+        if ($user) {
+            $subscribedIds = array_flip($user->subscribedOrganizations()->pluck('organizations.id')->all());
+            $organizations->transform(function (Organization $o) use ($subscribedIds) {
+                $o->is_subscribed = isset($subscribedIds[$o->id]);
+                return $o;
+            });
+        }
+
         return response()->json($organizations);
     }
 
@@ -25,6 +34,11 @@ class OrganizationController extends Controller
         $quizzes = $organization->publishedQuizzes()
             ->orderBy('quiz_date', 'desc')
             ->get();
+
+        $user = auth('sanctum')->user();
+        $organization->is_subscribed = $user
+            ? $user->subscribedOrganizations()->where('organizations.id', $organization->id)->exists()
+            : false;
 
         return response()->json([
             'organization' => $organization,

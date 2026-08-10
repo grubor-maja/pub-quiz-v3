@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Bell, Grid3x3 } from 'lucide-react'
 import { fetchOrganizations, fetchQuizzes } from '../api'
+import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
 import LoadingScreen from '../components/LoadingScreen'
 import Toolbar from '../components/Toolbar'
@@ -9,10 +11,33 @@ import OrgChipsBar from '../components/OrgChipsBar'
 import type { QuizFilters } from '../types'
 import { rezultatWord } from '../lib/utils'
 
+type Tab = 'all' | 'subscribed'
+
 export default function HomePage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [tab, setTab] = useState<Tab>('all')
   const [filters, setFilters] = useState<QuizFilters>({})
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
   const [searchInput, setSearchInput] = useState('')
+
+  // apply tab to filter
+  useEffect(() => {
+    setFilters(f => ({ ...f, subscribed: tab === 'subscribed' ? true : undefined, page: 1 }))
+  }, [tab])
+
+  // reset tab if user logs out
+  useEffect(() => {
+    if (!user && tab === 'subscribed') setTab('all')
+  }, [user, tab])
+
+  const handleTabClick = (newTab: Tab) => {
+    if (newTab === 'subscribed' && !user) {
+      navigate('/login')
+      return
+    }
+    setTab(newTab)
+  }
 
   // auto-apply search with debounce
   useEffect(() => {
@@ -57,6 +82,23 @@ export default function HomePage() {
 
   return (
     <div className="page-pad">
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex',
+        gap: 4,
+        borderBottom: '0.5px solid var(--border-subtle)',
+        marginBottom: 20,
+      }}>
+        <TabBtn active={tab === 'all'} onClick={() => handleTabClick('all')}>
+          <Grid3x3 size={13} strokeWidth={1.8} />
+          Svi kvizovi
+        </TabBtn>
+        <TabBtn active={tab === 'subscribed'} onClick={() => handleTabClick('subscribed')}>
+          <Bell size={13} strokeWidth={1.8} />
+          Pratim
+        </TabBtn>
+      </div>
+
       <Toolbar
         searchInput={searchInput}
         onSearchChange={setSearchInput}
@@ -72,13 +114,15 @@ export default function HomePage() {
         }
       />
 
-      {/* Org chips (multi-select filter) */}
-      <OrgChipsBar
-        orgs={orgs}
-        selected={selectedOrgs}
-        onToggle={toggleOrg}
-        onClearAll={() => setSelectedOrgs([])}
-      />
+      {/* Org chips (multi-select filter) - hidden on subscribed tab */}
+      {tab === 'all' && (
+        <OrgChipsBar
+          orgs={orgs}
+          selected={selectedOrgs}
+          onToggle={toggleOrg}
+          onClearAll={() => setSelectedOrgs([])}
+        />
+      )}
 
       {/* Section heading */}
       <div className="section-heading">
@@ -117,7 +161,9 @@ export default function HomePage() {
         </div>
       ) : data?.data.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Nema kvizova za zadate filtere.
+          {tab === 'subscribed'
+            ? 'Ne pratite nijednu organizaciju. Klikni "Zaprati" na stranici organizacije.'
+            : 'Nema kvizova za zadate filtere.'}
         </div>
       ) : (
         <div className={isFetching ? 'is-fetching' : undefined}>
@@ -157,6 +203,34 @@ export default function HomePage() {
         </div>
       )}
     </div>
+  )
+}
+
+function TabBtn({ active, onClick, children }: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '10px 14px',
+        marginBottom: -1,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 13,
+        fontWeight: active ? 600 : 500,
+        color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+        borderBottom: active ? '2px solid var(--accent-amber)' : '2px solid transparent',
+      }}
+    >
+      {children}
+    </button>
   )
 }
 

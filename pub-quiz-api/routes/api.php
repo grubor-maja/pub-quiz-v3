@@ -5,6 +5,7 @@ use App\Http\Controllers\FavoritesController;
 use App\Http\Controllers\InstagramSyncController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/quizzes', [QuizController::class, 'index']);
@@ -34,4 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/favorites', [FavoritesController::class, 'index']);
     Route::post('/favorites/{slug}', [FavoritesController::class, 'store']);
     Route::delete('/favorites/{slug}', [FavoritesController::class, 'destroy']);
+
+    Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+    Route::post('/organizations/{slug}/subscribe', [SubscriptionController::class, 'store']);
+    Route::delete('/organizations/{slug}/subscribe', [SubscriptionController::class, 'destroy']);
 });

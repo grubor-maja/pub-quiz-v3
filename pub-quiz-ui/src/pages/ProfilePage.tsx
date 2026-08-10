@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { Heart, Mail, User as UserIcon } from 'lucide-react'
-import { fetchFavorites } from '../api'
+import { Link } from 'react-router-dom'
+import { Heart, Mail, User as UserIcon, Bell, Building2 } from 'lucide-react'
+import { fetchFavorites, fetchSubscriptions } from '../api'
 import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
 import { kvizWord } from '../lib/utils'
@@ -11,6 +12,12 @@ export default function ProfilePage() {
   const { data: favorites, isLoading, isError } = useQuery({
     queryKey: ['favorites'],
     queryFn: fetchFavorites,
+    enabled: !!user,
+  })
+
+  const { data: subscribedOrgs } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: fetchSubscriptions,
     enabled: !!user,
   })
 
@@ -122,6 +129,88 @@ export default function ProfilePage() {
         <div className="card-grid">
           {favorites.map(quiz => (
             <QuizCard key={quiz.id} quiz={{ ...quiz, is_favorited: true }} />
+          ))}
+        </div>
+      )}
+
+      {/* Subscribed organizations */}
+      <div className="section-heading" style={{ marginTop: 40 }}>
+        <h2 className="sg" style={{
+          fontSize: 16,
+          fontWeight: 500,
+          letterSpacing: '-0.01em',
+          color: 'var(--text-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <Bell size={14} strokeWidth={1.8} style={{ color: 'var(--accent-amber)' }} />
+          Organizacije koje pratim
+        </h2>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+          {subscribedOrgs ? `${subscribedOrgs.length}` : ''}
+        </span>
+      </div>
+
+      {!subscribedOrgs || subscribedOrgs.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          background: 'var(--bg-surface)',
+          border: '0.5px dashed var(--border-subtle)',
+          borderRadius: 12,
+          color: 'var(--text-muted)',
+          fontSize: 13,
+        }}>
+          Ne pratite nijednu organizaciju. Idi na <Link to="/organizacije" style={{ color: 'var(--accent-amber)' }}>Organizacije</Link> i klikni "Zaprati".
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gap: 10,
+        }}>
+          {subscribedOrgs.map(org => (
+            <Link
+              key={org.id}
+              to={`/organizacije/${org.slug}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: 10,
+                background: 'var(--bg-surface)',
+                border: '0.5px solid var(--border-subtle)',
+                borderRadius: 10,
+                textDecoration: 'none',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'var(--bg-elevated)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0,
+              }}>
+                {org.logo_url
+                  ? <img src={org.logo_url} alt={org.name} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <Building2 size={16} style={{ color: 'var(--accent-amber)' }} />
+                }
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {org.name}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                  {org.published_quizzes_count ?? 0} {kvizWord(org.published_quizzes_count ?? 0)}
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       )}

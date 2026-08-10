@@ -30,6 +30,17 @@ class QuizController extends Controller
             }
         }
 
+        // Subscribed filter - only quizzes from organizations the user follows (requires auth)
+        if ($request->boolean('subscribed')) {
+            $user = auth('sanctum')->user();
+            if ($user) {
+                $subscribedIds = $user->subscribedOrganizations()->pluck('organizations.id');
+                $query->whereIn('organization_id', $subscribedIds);
+            } else {
+                $query->whereRaw('1 = 0'); // no results if not authenticated
+            }
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('quiz_date', '>=', $request->input('date_from'));
         }

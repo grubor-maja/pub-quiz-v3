@@ -99,4 +99,21 @@ export const removeFavorite = async (slug: string): Promise<{ message: string }>
   return data
 }
 
+// ---- Subscriptions ----
+
+export const fetchSubscriptions = async (): Promise<Organization[]> => {
+  const { data } = await api.get('/subscriptions')
+  return data.data ?? data
+}
+
+export const subscribeOrg = async (slug: string): Promise<{ message: string }> => {
+  const { data } = await api.post(`/organizations/${slug}/subscribe`)
+  return data
+}
+
+export const unsubscribeOrg = async (slug: string): Promise<{ message: string }> => {
+  const { data } = await api.delete(`/organizations/${slug}/subscribe`)
+  return data
+}
+
 export default api
