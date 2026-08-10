@@ -161,8 +161,12 @@ export default function QuizDetailPage() {
               <InfoRow
                 icon={<MapPin size={14} />}
                 label="Lokacija"
-                value={quiz.location ?? ''}
-                sub={quiz.address ?? undefined}
+                value={quiz.location ?? quiz.address ?? ''}
+                sub={quiz.location && quiz.address ? quiz.address : undefined}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  [quiz.location, quiz.address].filter(Boolean).join(', ')
+                )}`}
+                external
               />
             )}
             <InfoRow
