@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { Building2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Organization } from '../types'
 
 interface Props {
@@ -94,7 +94,9 @@ function Chip({
   label: string
   logo: string | null
 }) {
+  const [imgFailed, setImgFailed] = useState(false)
   const size = 54
+  const showImg = logo && !imgFailed
   return (
     <button
       onClick={onClick}
@@ -127,10 +129,12 @@ function Chip({
         flexShrink: 0,
         boxShadow: selected ? '0 0 14px rgba(233,184,74,0.25)' : 'none',
       }}>
-        {logo ? (
+        {showImg ? (
           <img
-            src={logo}
+            src={logo!}
             alt={label}
+            referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)}
             style={{
               width: '100%',
               height: '100%',
@@ -139,7 +143,14 @@ function Chip({
             }}
           />
         ) : (
-          <Building2 size={22} strokeWidth={1.5} style={{ color: 'var(--text-muted)' }} />
+          <span style={{
+            fontSize: 20,
+            fontWeight: 600,
+            color: 'var(--accent-amber)',
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}>
+            {label.charAt(0).toUpperCase()}
+          </span>
         )}
       </div>
       <span style={{
