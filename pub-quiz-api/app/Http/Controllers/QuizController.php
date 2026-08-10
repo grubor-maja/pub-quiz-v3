@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Quiz;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class QuizController extends Controller
 {
@@ -25,7 +24,10 @@ class QuizController extends Controller
         }
 
         if ($request->filled('org')) {
-            $query->whereHas('organization', fn ($q) => $q->where('slug', $request->input('org')));
+            $slugs = array_filter(array_map('trim', explode(',', $request->input('org'))));
+            if (count($slugs) > 0) {
+                $query->whereHas('organization', fn ($q) => $q->whereIn('slug', $slugs));
+            }
         }
 
         if ($request->filled('date_from')) {

@@ -5,12 +5,13 @@ import { fetchOrganizations, fetchQuizzes } from '../api'
 import QuizCard from '../components/QuizCard'
 import LoadingScreen from '../components/LoadingScreen'
 import Toolbar from '../components/Toolbar'
-import UpcomingRow from '../components/UpcomingRow'
+import OrgChipsBar from '../components/OrgChipsBar'
 import type { QuizFilters } from '../types'
 import { rezultatWord } from '../lib/utils'
 
 export default function HomePage() {
   const [filters, setFilters] = useState<QuizFilters>({})
+  const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
   const [searchInput, setSearchInput] = useState('')
 
   // auto-apply search with debounce
@@ -20,6 +21,17 @@ export default function HomePage() {
     }, 400)
     return () => clearTimeout(t)
   }, [searchInput])
+
+  // apply org selection to filters (CSV)
+  useEffect(() => {
+    setFilters(f => ({ ...f, org: selectedOrgs.length > 0 ? selectedOrgs.join(',') : undefined, page: 1 }))
+  }, [selectedOrgs])
+
+  const toggleOrg = (slug: string) => {
+    setSelectedOrgs(prev =>
+      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+    )
+  }
 
   const { data: orgs } = useQuery({
     queryKey: ['organizations'],
@@ -39,6 +51,7 @@ export default function HomePage() {
 
   const clearFilters = () => {
     setFilters({})
+    setSelectedOrgs([])
     setSearchInput('')
   }
 
@@ -47,23 +60,25 @@ export default function HomePage() {
       <Toolbar
         searchInput={searchInput}
         onSearchChange={setSearchInput}
-        initialOrg={filters.org ?? ''}
         initialDateFrom={filters.date_from ?? ''}
         initialDateTo={filters.date_to ?? ''}
-        onApplyFilters={(org, dateFrom, dateTo) =>
+        onApplyFilters={(dateFrom, dateTo) =>
           setFilters(f => ({
             ...f,
-            org: org || undefined,
             date_from: dateFrom || undefined,
             date_to: dateTo || undefined,
             page: 1,
           }))
         }
-        orgs={orgs}
       />
 
-      {/* Upcoming horizontal scroller - shows first 10 quizzes */}
-      {!hasFilters && <UpcomingRow />}
+      {/* Org chips (multi-select filter) */}
+      <OrgChipsBar
+        orgs={orgs}
+        selected={selectedOrgs}
+        onToggle={toggleOrg}
+        onClearAll={() => setSelectedOrgs([])}
+      />
 
       {/* Section heading */}
       <div className="section-heading">

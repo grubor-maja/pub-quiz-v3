@@ -230,52 +230,48 @@ a, button, [role="button"],
   .card-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
 
-/* Horizontal scrollable row (Upcoming, Hero galleries). */
-.h-scroll {
+/* Horizontal scrollable chip row (org filter chips). */
+.chips-scroll {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  padding: 4px 2px 8px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 4px 12px;
-  margin: 0 -4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.12) transparent;
+  scrollbar-color: rgba(255,255,255,0.10) transparent;
 }
-.h-scroll::-webkit-scrollbar {
-  height: 6px;
+.chips-scroll::-webkit-scrollbar {
+  height: 4px;
 }
-.h-scroll::-webkit-scrollbar-track {
+.chips-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-.h-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
-  border-radius: 3px;
+.chips-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.10);
+  border-radius: 2px;
 }
-.h-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(233,184,74,0.4);
+.chips-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(233,184,74,0.35);
 }
-.h-scroll > * {
+.chips-scroll > * {
   flex: 0 0 auto;
-  width: 210px;
-  scroll-snap-align: start;
 }
-@media (max-width: 560px) {
-  .h-scroll > * { width: 175px; }
+.org-chip:hover {
+  opacity: 1 !important;
 }
 
-/* Toolbar - filters wrap and stack on mobile. */
+/* Toolbar - search + date pickers + apply. Org filter is now chips (below toolbar). */
 .toolbar-grid {
   display: grid;
-  grid-template-columns: 1fr 180px 130px 130px auto;
+  grid-template-columns: 1fr 140px 140px auto;
   gap: 8px;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
   .toolbar-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr auto;
     gap: 8px;
   }
   .toolbar-grid > *:first-child {

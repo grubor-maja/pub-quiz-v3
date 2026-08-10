@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Search, Building2 } from 'lucide-react'
-import type { Organization } from '../types'
-import CustomSelect from './CustomSelect'
+import { Search } from 'lucide-react'
 import CustomDatePicker from './CustomDatePicker'
 
 interface Props {
   searchInput: string
   onSearchChange: (v: string) => void
-  initialOrg: string
   initialDateFrom: string
   initialDateTo: string
-  onApplyFilters: (org: string, dateFrom: string, dateTo: string) => void
-  orgs?: Organization[]
+  onApplyFilters: (dateFrom: string, dateTo: string) => void
 }
 
 const inputBox: React.CSSProperties = {
@@ -28,23 +24,18 @@ const inputBox: React.CSSProperties = {
 
 export default function Toolbar({
   searchInput, onSearchChange,
-  initialOrg, initialDateFrom, initialDateTo,
-  onApplyFilters, orgs,
+  initialDateFrom, initialDateTo,
+  onApplyFilters,
 }: Props) {
-  const [org, setOrg] = useState(initialOrg)
   const [dateFrom, setDateFrom] = useState(initialDateFrom)
   const [dateTo, setDateTo] = useState(initialDateTo)
 
-  useEffect(() => { setOrg(initialOrg) }, [initialOrg])
   useEffect(() => { setDateFrom(initialDateFrom) }, [initialDateFrom])
   useEffect(() => { setDateTo(initialDateTo) }, [initialDateTo])
 
   const hasChanges =
-    org !== initialOrg ||
     dateFrom !== initialDateFrom ||
     dateTo !== initialDateTo
-
-  const orgOptions = (orgs ?? []).map(o => ({ value: o.slug, label: o.name }))
 
   return (
     <div className="toolbar-grid">
@@ -68,15 +59,6 @@ export default function Toolbar({
         />
       </div>
 
-      {/* Org dropdown */}
-      <CustomSelect
-        value={org}
-        onChange={setOrg}
-        options={orgOptions}
-        placeholder="Sve organizacije"
-        icon={<Building2 size={13} style={{ opacity: 0.5, flexShrink: 0 }} />}
-      />
-
       {/* Date OD */}
       <CustomDatePicker
         label="OD"
@@ -95,7 +77,7 @@ export default function Toolbar({
 
       {/* Primeni */}
       <button
-        onClick={() => onApplyFilters(org, dateFrom, dateTo)}
+        onClick={() => onApplyFilters(dateFrom, dateTo)}
         disabled={!hasChanges}
         className="btn-primeni"
         style={{
@@ -107,7 +89,6 @@ export default function Toolbar({
           cursor: hasChanges ? 'pointer' : 'default',
           background: hasChanges ? 'var(--accent-amber)' : 'rgba(255,255,255,0.04)',
           color: hasChanges ? '#0B0B10' : 'var(--text-muted)',
-          transition: 'background 0.15s, color 0.15s',
           whiteSpace: 'nowrap',
         }}
       >
