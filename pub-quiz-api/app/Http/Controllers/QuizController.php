@@ -87,4 +87,74 @@ class QuizController extends Controller
 
         return response()->json($quiz);
     }
+
+    public function calendar(string $slug)
+    {
+        $quiz = Quiz::published()->with('organization:id,name,slug')->where('slug', $slug)->firstOrFail();
+
+        // Build datetime in Europe/Belgrade tz. Fall back to 19:00 if no time.
+        $tz = 'Europe/Belgrade';
+        $date = $quiz->quiz_date instanceof \DateTimeInterface
+            ? $quiz->quiz_date->format('Y-m-d')
+            : (string) $quiz->quiz_date;
+        $time = $quiz->quiz_time instanceof \DateTimeInterface
+            ? $quiz->quiz_time->format('H:i:s')
+            : ((string) $quiz->quiz_time ?: '19:00:00');
+
+        $start = new \DateTime("{$date} {$time}", new \DateTimeZone($tz));
+        $end = (clone $start)->modify('+2 hours');
+
+        $fmt = fn (\DateTime $dt) => $dt->format('Ymd\THis');
+        $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z');
+
+        // Escape per RFC 5545: backslash, comma, semicolon, newline
+        $esc = function (?string $s): string {
+            if ($s === null) return '';
+            return str_replace(
+                ["\\", "\r\n", "\n", ",", ";"],
+                ["\\\\", "\\n", "\\n", "\\,", "\\;"],
+                $s
+            );
+        };
+
+        $location = trim(implode(', ', array_filter([$quiz->location, $quiz->address])));
+        $frontendUrl = rtrim(config('app.frontend_url', config('app.url')), '/');
+        $eventUrl = "{$frontendUrl}/kvizovi/{$quiz->slug}";
+
+        $descParts = [];
+        if ($quiz->organization) $descParts[] = "Organizator: {$quiz->organization->name}";
+        if ($quiz->entry_fee !== null) $descParts[] = "Kotizacija: {$quiz->entry_fee} din po timu";
+        $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} clanova";
+        if ($quiz->contact_phone) $descParts[] = "Kontakt: {$quiz->contact_phone}";
+        $descParts[] = "Detalji: {$eventUrl}";
+        $description = implode("\n", $descParts);
+
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//KoZnaZna//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'BEGIN:VEVENT',
+            "UID:{$quiz->id}@koznazna.me",
+            "DTSTAMP:{$now}",
+            "DTSTART;TZID={$tz}:" . $fmt($start),
+            "DTEND;TZID={$tz}:" . $fmt($end),
+            'SUMMARY:' . $esc($quiz->title),
+            'DESCRIPTION:' . $esc($description),
+            'LOCATION:' . $esc($location),
+            "URL:{$eventUrl}",
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ];
+
+        $content = implode("\r\n", $lines) . "\r\n";
+        $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', $quiz->slug) . '.ics';
+
+        return response($content, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        ]);
+    }
 }

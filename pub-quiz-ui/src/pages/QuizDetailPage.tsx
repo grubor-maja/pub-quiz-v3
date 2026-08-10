@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft, CalendarPlus } from 'lucide-react'
 import { fetchQuiz } from '../api'
 import { formatDate, formatPrice, formatTime, clanWord } from '../lib/utils'
 import HeartButton from '../components/HeartButton'
@@ -217,6 +217,30 @@ export default function QuizDetailPage() {
             >
               <Phone size={14} />
               Prijavi tim: {quiz.contact_phone}
+            </a>
+          )}
+
+          {quiz.quiz_date && (
+            <a
+              href={`/api/quizzes/${quiz.slug}/calendar.ics`}
+              download
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '11px 16px',
+                borderRadius: 10,
+                fontSize: 12.5,
+                fontWeight: 500,
+                textDecoration: 'none',
+                background: 'rgba(255,255,255,0.03)',
+                border: '0.5px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <CalendarPlus size={14} />
+              Dodaj u kalendar
             </a>
           )}
         </div>
