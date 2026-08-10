@@ -398,6 +398,13 @@ a, button, [role="button"],
   }
 }
 
+/* Hide org name badge on quiz cards on mobile (overlaps with date badge in narrow cards). */
+@media (max-width: 640px) {
+  .card-org-tag {
+    display: none !important;
+  }
+}
+
 /* Section heading row that stays readable on mobile. */
 .section-heading {
   display: flex;

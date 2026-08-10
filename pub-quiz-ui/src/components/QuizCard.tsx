@@ -85,7 +85,7 @@ export default function QuizCard({ quiz, compact = false }: Props) {
         )}
 
         {!compact && (
-          <span style={{ ...badge, right: 7, color: 'rgba(237,234,227,0.7)' }}>
+          <span className="card-org-tag" style={{ ...badge, right: 7, color: 'rgba(237,234,227,0.7)' }}>
             {quiz.organization.name}
           </span>
         )}
