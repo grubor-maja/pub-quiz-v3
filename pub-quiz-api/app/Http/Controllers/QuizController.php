@@ -152,8 +152,9 @@ class QuizController extends Controller
         $filename = preg_replace('/[^A-Za-z0-9_.-]/', '_', $quiz->slug) . '.ics';
 
         return response($content, 200, [
-            'Content-Type' => 'text/calendar; charset=utf-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Type' => 'text/calendar; charset=utf-8; method=PUBLISH',
+            // inline (not attachment) - lets mobile OS hand off to Calendar app
+            'Content-Disposition' => "inline; filename=\"{$filename}\"",
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ]);
     }

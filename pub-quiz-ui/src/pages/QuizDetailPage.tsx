@@ -223,7 +223,8 @@ export default function QuizDetailPage() {
           {quiz.quiz_date && (
             <a
               href={`/api/quizzes/${quiz.slug}/calendar.ics`}
-              download
+              target="_blank"
+              rel="noopener"
               style={{
                 display: 'flex',
                 alignItems: 'center',
