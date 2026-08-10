@@ -9,6 +9,7 @@ use App\Http\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/quizzes', [QuizController::class, 'index']);
+Route::get('/quizzes/map', [QuizController::class, 'map']);
 Route::get('/quizzes/{slug}', [QuizController::class, 'show']);
 Route::get('/quizzes/{slug}/calendar.ics', [QuizController::class, 'calendar']);
 

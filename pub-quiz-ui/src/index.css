@@ -186,6 +186,31 @@ a, button, [role="button"],
   pointer-events: none;
 }
 
+/* Leaflet map custom amber marker */
+.custom-map-marker {
+  background: transparent;
+  border: none;
+}
+.marker-pin {
+  width: 22px;
+  height: 22px;
+  background: #E9B84A;
+  border: 3px solid #0B0B10;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  transform-origin: center center;
+  margin-left: 2px;
+  margin-top: 2px;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+}
+.leaflet-container {
+  background: #1a1a24;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
 /* Respect user's motion preferences - disable transitions if reduced-motion is set */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -297,7 +322,7 @@ a, button, [role="button"],
     ".     desc   desc";
   column-gap: 24px;
   row-gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 @media (max-width: 899px) {
   .quiz-detail-grid {

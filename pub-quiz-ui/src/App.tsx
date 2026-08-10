@@ -12,6 +12,7 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProfilePage from './pages/ProfilePage'
+import MapPage from './pages/MapPage'
 import { useMediaQuery } from './lib/useMediaQuery'
 
 function AppShell() {
@@ -85,6 +86,7 @@ function AppShell() {
           <Route path="/kvizovi/:slug" element={<QuizDetailPage />} />
           <Route path="/organizacije" element={<OrganizationsPage />} />
           <Route path="/organizacije/:slug" element={<OrganizationDetailPage />} />
+          <Route path="/mapa" element={<MapPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

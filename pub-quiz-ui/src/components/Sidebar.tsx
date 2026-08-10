@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Brain,
   Building2,
+  MapPinned,
   User as UserIcon,
   LogOut,
   type LucideIcon,
@@ -105,6 +106,7 @@ export default function Sidebar({ isMobile = false, open = false, onClose }: Sid
 
       <NavItem to="/" icon={Brain} label="Kvizovi" active={pathname === '/' || pathname.startsWith('/kvizovi')} />
       <NavItem to="/organizacije" icon={Building2} label="Organizacije" active={pathname.startsWith('/organizacije')} />
+      <NavItem to="/mapa" icon={MapPinned} label="Mapa" active={pathname.startsWith('/mapa')} />
 
       {user && (
         <NavItem to="/profil" icon={UserIcon} label="Moj profil" active={pathname.startsWith('/profil')} />

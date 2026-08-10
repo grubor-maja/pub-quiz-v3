@@ -139,17 +139,13 @@ export default function QuizDetailPage() {
         </div>
 
         {/* Right: Info */}
-        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 18, height: '100%' }}>
-          {/* Info card - grows to match image height */}
+        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Info card */}
           <div style={{
             background: 'var(--bg-surface)',
             border: '0.5px solid var(--border-subtle)',
             borderRadius: 12,
             padding: 4,
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-around',
           }}>
             {quiz.quiz_date && (
               <InfoRow icon={<Calendar size={14} />} label="Datum" value={formatDate(quiz.quiz_date)} />

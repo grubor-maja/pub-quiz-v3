@@ -88,6 +88,19 @@ class QuizController extends Controller
         return response()->json($quiz);
     }
 
+    public function map(): JsonResponse
+    {
+        $quizzes = Quiz::published()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->where('quiz_date', '>=', now()->subDay())
+            ->with('organization:id,name,slug,logo_url')
+            ->orderBy('quiz_date', 'asc')
+            ->get(['id', 'title', 'slug', 'quiz_date', 'quiz_time', 'location', 'address', 'entry_fee', 'latitude', 'longitude', 'cover_image_url', 'organization_id']);
+
+        return response()->json(['data' => $quizzes]);
+    }
+
     public function calendar(string $slug)
     {
         $quiz = Quiz::published()->with('organization:id,name,slug')->where('slug', $slug)->firstOrFail();
