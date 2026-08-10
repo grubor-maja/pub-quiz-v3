@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
-import { MapPin, Locate } from 'lucide-react'
+import { CalendarRange, Locate } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import api, { fetchOrganizations } from '../api'
 import OrgChipsBar from '../components/OrgChipsBar'
+import CustomSelect from '../components/CustomSelect'
 import type { Quiz } from '../types'
 import { formatDate, formatTime, formatPrice } from '../lib/utils'
 
@@ -189,17 +190,20 @@ export default function MapPage() {
         flexWrap: 'wrap',
         marginBottom: 14,
       }}>
-        <select
-          value={dateFilter}
-          onChange={e => setDateFilter(e.target.value as DateFilter)}
-          className="map-select"
-        >
-          <option value="all">Sve datume</option>
-          <option value="today">Danas</option>
-          <option value="tomorrow">Sutra</option>
-          <option value="weekend">Vikend</option>
-          <option value="week">Ove nedelje</option>
-        </select>
+        <div style={{ minWidth: 170 }}>
+          <CustomSelect
+            value={dateFilter === 'all' ? '' : dateFilter}
+            onChange={(v) => setDateFilter((v || 'all') as DateFilter)}
+            options={[
+              { value: 'today', label: 'Danas' },
+              { value: 'tomorrow', label: 'Sutra' },
+              { value: 'weekend', label: 'Vikend' },
+              { value: 'week', label: 'Ove nedelje' },
+            ]}
+            placeholder="Svi datumi"
+            icon={<CalendarRange size={13} style={{ opacity: 0.5, flexShrink: 0 }} />}
+          />
+        </div>
 
         <button
           onClick={handleLocate}
@@ -224,25 +228,19 @@ export default function MapPage() {
         </button>
 
         {userLoc && (
-          <select
-            value={radius}
-            onChange={e => setRadius(Number(e.target.value) as RadiusFilter)}
-            style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '0.5px solid var(--border-default)',
-              borderRadius: 8,
-              padding: '9px 12px',
-              fontSize: 13,
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-            }}
-          >
-            <option value={0}>Bilo koja razdaljina</option>
-            <option value={5}>≤ 5 km</option>
-            <option value={10}>≤ 10 km</option>
-            <option value={25}>≤ 25 km</option>
-            <option value={50}>≤ 50 km</option>
-          </select>
+          <div style={{ minWidth: 170 }}>
+            <CustomSelect
+              value={radius === 0 ? '' : String(radius)}
+              onChange={(v) => setRadius((v ? Number(v) : 0) as RadiusFilter)}
+              options={[
+                { value: '5', label: '≤ 5 km' },
+                { value: '10', label: '≤ 10 km' },
+                { value: '25', label: '≤ 25 km' },
+                { value: '50', label: '≤ 50 km' },
+              ]}
+              placeholder="Bilo koja razdaljina"
+            />
+          </div>
         )}
 
         {userLoc && (
