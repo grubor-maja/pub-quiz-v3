@@ -186,7 +186,16 @@ a, button, [role="button"],
   pointer-events: none;
 }
 
-/* Leaflet map custom amber marker */
+/* Leaflet map custom amber marker.
+   Keep map controls below sidebar drawer (z-index: 2000). */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 400 !important;
+}
+.leaflet-control {
+  z-index: 800 !important;
+}
 .custom-map-marker {
   background: transparent;
   border: none;
@@ -365,11 +374,13 @@ a, button, [role="button"],
   flex-wrap: wrap;
 }
 
-/* Sidebar drawer + backdrop for mobile. */
+/* Sidebar drawer + backdrop for mobile.
+   z-index: must be > Leaflet map controls (Leaflet uses up to 1000).
+   Also account for iOS safe area at bottom (URL bar overlap) via padding-bottom. */
 .sidebar-desktop {
   background: var(--bg-side);
   border-right: 0.5px solid var(--border-subtle);
-  padding: 22px 14px;
+  padding: 22px 14px calc(22px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -384,10 +395,13 @@ a, button, [role="button"],
     left: 0;
     width: 260px;
     height: 100vh;
-    z-index: 60;
+    /* extra bottom padding on iOS so 'Odjava' clears home indicator / URL bar */
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    z-index: 2000;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .sidebar-desktop.open {
     transform: translateX(0);
@@ -405,7 +419,7 @@ a, button, [role="button"],
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(2px);
-    z-index: 55;
+    z-index: 1990;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;

@@ -69,7 +69,7 @@ export default function OrgChipsBar({ orgs, selected, onToggle, onClearAll }: Pr
         <Chip
           selected={!anySelected}
           onClick={onClearAll}
-          label="Svi"
+          label="Sve"
           logo={null}
         />
         {orgs.map(o => (
