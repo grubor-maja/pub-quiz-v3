@@ -4,6 +4,7 @@ namespace App\Services\Extraction\Orgs;
 
 use App\Models\Organization;
 use App\Services\Extraction\DefaultExtractor;
+use Illuminate\Support\Facades\Log;
 
 /**
  * I HATE QUIZ (@pabkviz.rs) posts three distinct kinds of content:
@@ -45,12 +46,15 @@ class IHateQuizExtractor extends DefaultExtractor
 RULES;
     }
 
+    /** From this many dates in one post it is the monthly KVIZ REPERTOAR listing. */
+    private const REPERTOIRE_MIN_ENTRIES = 5;
+
     /**
-     * The monthly repertoire is kept: it is the only advance notice of what is
-     * on for the rest of the month, which is the main reason anyone checks the
-     * site. What it must not do is lend its caption and cover art to those
-     * entries - the job handles that - so they stay bare until each quiz gets
-     * its own post a day or so ahead, and enrichment fills them in.
+     * The monthly repertoire is dropped, by the site owner's decision: a quiz
+     * should only appear once it has its own post, so every card carries real
+     * artwork and a real description. The trade-off is accepted knowingly - the
+     * listing announces the whole month, so without it nothing shows more than
+     * roughly a week ahead, which is how far in advance they announce each quiz.
      *
      * Their captions state "SREDA 20:30H & SUBOTA 21H", so a Saturday with no
      * stated time gets 21:00 rather than the organization default of 20:30.
@@ -61,6 +65,15 @@ RULES;
         string $caption,
         string $postDate
     ): array {
+        if (count($candidates) >= self::REPERTOIRE_MIN_ENTRIES) {
+            Log::info('Extraction: skipping I HATE QUIZ monthly repertoire', [
+                'post_date' => $postDate,
+                'entries' => count($candidates),
+            ]);
+
+            return [];
+        }
+
         return array_map(function (array $c) {
             $date = $c['quiz_date'] ?? null;
             if (!is_string($date) || ($c['quiz_time'] ?? null) !== null || ($c['is_cancelled'] ?? false)) {
