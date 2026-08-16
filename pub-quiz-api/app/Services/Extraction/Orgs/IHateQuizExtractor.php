@@ -4,6 +4,7 @@ namespace App\Services\Extraction\Orgs;
 
 use App\Models\Organization;
 use App\Services\Extraction\DefaultExtractor;
+use Illuminate\Support\Facades\Log;
 
 /**
  * I HATE QUIZ (@pabkviz.rs) posts three distinct kinds of content:
@@ -25,10 +26,13 @@ class IHateQuizExtractor extends DefaultExtractor
     protected function promptRules(Organization $org): string
     {
         return <<<'RULES'
-- Ova organizacija cesto objavljuje RASPORED: caption sadrzi listu linija oblika
-  "10.08. How I Met Your Mother", "11.08. Dr House", "12.08. Geeks Who Drink".
-  SVAKA takva linija je poseban kviz - napravi poseban objekat za svaku.
-  Naslov je tekst posle datuma, bez emodzija i bez napomena u zagradi.
+- Ova organizacija jednom mesecno objavi "KVIZ REPERTOAR" - listu linija oblika
+  "10.08. How I Met Your Mother", "11.08. Dr House", "12.08. Geeks Who Drink"
+  za ceo mesec. Svaku takvu liniju i dalje vrati kao poseban objekat u "quizzes";
+  aplikacija sama prepozna takvu listu po broju stavki i odbaci je, jer se svaki
+  od tih kvizova kasnije najavi posebnom objavom sa svojom slikom i opisom.
+- Pojedinacne najave ("✅16.8. Tematski kviz specijal posvecen...") su ono sto
+  nam treba - one imaju jedan ili dva datuma, svoju grafiku i svoj opis.
 - Cesto objavljuju i zanimljivosti ("NA DANASNJI DAN...", vesti o poznatima,
   price o serijama i estradi). Te objave NISU najave kvizova, cak i kad pominju
   godine ili datume iz proslosti - tada vrati "is_quiz_post": false.
@@ -43,9 +47,20 @@ RULES;
     }
 
     /**
-     * Their captions state "SREDA 20:30H & SUBOTA 21H". The schedule posts list
-     * bare dates with no time, so apply the stated Saturday time where the
-     * organization default (20:30) would otherwise be wrong.
+     * From this many dates in one post it is the monthly KVIZ REPERTOAR listing.
+     */
+    private const REPERTOIRE_MIN_ENTRIES = 5;
+
+    /**
+     * Two things happen here.
+     *
+     * The monthly repertoire is dropped entirely. It lists 30+ evenings at once
+     * with no artwork and a caption about the whole month, and every one of them
+     * is announced again later in its own post with a real picture and a real
+     * description. Keeping both filled the site with blank look-alike cards.
+     *
+     * Their captions also state "SREDA 20:30H & SUBOTA 21H", so a Saturday with
+     * no stated time gets 21:00 rather than the organization default of 20:30.
      */
     protected function postProcess(
         array $candidates,
@@ -53,6 +68,15 @@ RULES;
         string $caption,
         string $postDate
     ): array {
+        if (count($candidates) >= self::REPERTOIRE_MIN_ENTRIES) {
+            Log::info('Extraction: skipping I HATE QUIZ monthly repertoire', [
+                'post_date' => $postDate,
+                'entries' => count($candidates),
+            ]);
+
+            return [];
+        }
+
         return array_map(function (array $c) {
             $date = $c['quiz_date'] ?? null;
             if (!is_string($date) || ($c['quiz_time'] ?? null) !== null || ($c['is_cancelled'] ?? false)) {

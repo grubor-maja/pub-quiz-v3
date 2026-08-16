@@ -22,6 +22,12 @@ class SyncInstagramPosts implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * From this many quizzes in one post it is a listing rather than an
+     * announcement, so its caption and cover art describe none of them.
+     */
+    private const SCHEDULE_MIN_QUIZZES = 5;
+
     public function __construct(private ?string $orgSlug = null)
     {
     }
@@ -138,11 +144,16 @@ class SyncInstagramPosts implements ShouldQueue
                 return;
             }
 
-            // A post announcing a single quiz describes and pictures that quiz.
-            // A monthly schedule does neither: its caption lists the whole month
-            // and its cover art is generic, so copying them onto every entry
-            // would show 20 identical cards with a caption about other quizzes.
-            $isSchedule = count($candidates) > 1;
+            // A monthly repertoire lists dozens of unrelated themes; its caption
+            // and cover art describe none of them, so copying those onto every
+            // entry would show 20 identical cards captioned about other quizzes.
+            //
+            // Announcing one recurring quiz on two or three dates is not that:
+            // "GEEKS WHO DRINK, sreda i subota" comes with artwork that really
+            // does belong to both evenings. Counting any multi-date post as a
+            // schedule threw that artwork away, which is why several quizzes
+            // showed a blank card while their picture sat right there on Instagram.
+            $isSchedule = count($candidates) >= self::SCHEDULE_MIN_QUIZZES;
 
             $localImageUrl = (!$isSchedule && $import->image_url)
                 ? $this->downloadAndStoreImage($import->image_url, $import->instagram_post_id)
