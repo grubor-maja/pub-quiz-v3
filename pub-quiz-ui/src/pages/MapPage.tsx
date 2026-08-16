@@ -9,7 +9,7 @@ import api, { fetchOrganizations } from '../api'
 import OrgChipsBar from '../components/OrgChipsBar'
 import CustomSelect from '../components/CustomSelect'
 import type { Quiz } from '../types'
-import { formatDate, formatTime, formatPrice } from '../lib/utils'
+import { formatDate, formatTime, formatPrice, kvizWord, lokacijaWord } from '../lib/utils'
 
 // Fix default marker icons for Vite bundling
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -279,7 +279,7 @@ export default function MapPage() {
           ? 'Učitavanje...'
           : quizzes.length === 0
             ? 'Nema kvizova za zadate filtere.'
-            : `${groups.length} lokacija · ${quizzes.length} kvizova`
+            : `${groups.length} ${lokacijaWord(groups.length)} · ${quizzes.length} ${kvizWord(quizzes.length)}`
         }
       </div>
 
@@ -349,7 +349,7 @@ export default function MapPage() {
                       {group.quizzes[0].location ?? group.quizzes[0].address}
                       {group.quizzes.length > 1 && (
                         <span style={{ fontWeight: 400, color: '#666', marginLeft: 6 }}>
-                          · {group.quizzes.length} kvizova
+                          · {group.quizzes.length} {kvizWord(group.quizzes.length)}
                         </span>
                       )}
                     </div>

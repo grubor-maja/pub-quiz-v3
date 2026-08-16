@@ -47,6 +47,7 @@ export function pluralSr(n: number, singular: string, paucal: string, plural: st
 export const kvizWord = (n: number) => pluralSr(n, 'kviz', 'kviza', 'kvizova')
 export const rezultatWord = (n: number) => pluralSr(n, 'rezultat', 'rezultata', 'rezultata')
 export const clanWord = (n: number) => pluralSr(n, 'član', 'člana', 'članova')
+export const lokacijaWord = (n: number) => pluralSr(n, 'lokacija', 'lokacije', 'lokacija')
 
 /**
  * Organizers often state only one side of the team size, or neither.
