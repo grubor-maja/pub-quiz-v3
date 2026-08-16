@@ -81,18 +81,31 @@ export default function QuizCard({ quiz, compact = false }: Props) {
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          // No artwork yet - organizers usually publish a quiz's picture only a
-          // day or two ahead. Show the organizer's mark so the card reads as
-          // "not announced yet" rather than broken; enrichment swaps in the real
-          // image as soon as their post appears.
+          // No artwork yet - organizers publish a quiz's picture a day or two
+          // ahead, while the schedule announces it weeks out. Rather than an
+          // empty rectangle, set the quiz name as a poster so the card looks
+          // deliberate; enrichment swaps in the real image once it exists.
           <div style={{
             width: '100%',
             height: '100%',
             background: gradient,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: compact ? 9 : 12,
+            position: 'relative',
           }}>
+            {/* faint diagonal weave so the panel reads as designed, not empty */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage:
+                  'repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 9px)',
+              }}
+            />
             {quiz.organization.logo_url ? (
               <img
                 src={quiz.organization.logo_url}
@@ -100,26 +113,35 @@ export default function QuizCard({ quiz, compact = false }: Props) {
                 aria-hidden="true"
                 loading="lazy"
                 style={{
-                  width: '46%',
-                  maxWidth: 110,
-                  aspectRatio: '1',
-                  objectFit: 'contain',
+                  width: compact ? 46 : 58,
+                  height: compact ? 46 : 58,
+                  objectFit: 'cover',
                   borderRadius: '50%',
-                  opacity: 0.3,
-                  filter: 'grayscale(0.4)',
+                  opacity: 0.55,
+                  border: '0.5px solid rgba(255,255,255,0.12)',
+                  position: 'relative',
                 }}
               />
             ) : (
               <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: compact ? 22 : 28,
+                fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                fontSize: compact ? 26 : 32,
                 fontWeight: 600,
-                color: 'rgba(237,234,227,0.16)',
-                letterSpacing: '0.04em',
+                color: 'rgba(237,234,227,0.22)',
+                position: 'relative',
               }}>
                 {quiz.organization.name.charAt(0).toUpperCase()}
               </span>
             )}
+            <span style={{
+              position: 'relative',
+              fontSize: compact ? 8.5 : 9.5,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'rgba(237,234,227,0.4)',
+            }}>
+              Najavljeno
+            </span>
           </div>
         )}
 
