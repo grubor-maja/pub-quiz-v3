@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, X, Bell, Grid3x3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Bell, Grid3x3, Archive } from 'lucide-react'
 import { fetchOrganizations, fetchQuizzes } from '../api'
 import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
@@ -11,7 +11,7 @@ import OrgChipsBar from '../components/OrgChipsBar'
 import type { QuizFilters } from '../types'
 import { rezultatWord } from '../lib/utils'
 
-type Tab = 'all' | 'subscribed'
+type Tab = 'all' | 'subscribed' | 'archive'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -23,7 +23,12 @@ export default function HomePage() {
 
   // apply tab to filter
   useEffect(() => {
-    setFilters(f => ({ ...f, subscribed: tab === 'subscribed' ? true : undefined, page: 1 }))
+    setFilters(f => ({
+      ...f,
+      subscribed: tab === 'subscribed' ? true : undefined,
+      archive: tab === 'archive' ? true : undefined,
+      page: 1,
+    }))
   }, [tab])
 
   // reset tab if user logs out
@@ -91,11 +96,15 @@ export default function HomePage() {
       }}>
         <TabBtn active={tab === 'all'} onClick={() => handleTabClick('all')}>
           <Grid3x3 size={13} strokeWidth={1.8} />
-          Svi kvizovi
+          Predstojeći
         </TabBtn>
         <TabBtn active={tab === 'subscribed'} onClick={() => handleTabClick('subscribed')}>
           <Bell size={13} strokeWidth={1.8} />
           Pratim
+        </TabBtn>
+        <TabBtn active={tab === 'archive'} onClick={() => handleTabClick('archive')}>
+          <Archive size={13} strokeWidth={1.8} />
+          Arhiva
         </TabBtn>
       </div>
 
@@ -115,7 +124,7 @@ export default function HomePage() {
       />
 
       {/* Org chips (multi-select filter) - hidden on subscribed tab */}
-      {tab === 'all' && (
+      {tab !== 'subscribed' && (
         <OrgChipsBar
           orgs={orgs}
           selected={selectedOrgs}
@@ -127,7 +136,7 @@ export default function HomePage() {
       {/* Section heading */}
       <div className="section-heading">
         <h2 className="sg" style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
-          Predstojeći kvizovi
+          {tab === 'archive' ? 'Prošli kvizovi' : tab === 'subscribed' ? 'Kvizovi organizacija koje pratim' : 'Predstojeći kvizovi'}
         </h2>
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
           {data ? `${data.total} ${rezultatWord(data.total)} · sortirano po datumu` : ''}
@@ -146,7 +155,7 @@ export default function HomePage() {
                 gap: 4,
               }}
             >
-              <X size={10} /> ocisti
+              <X size={10} /> očisti
             </button>
           )}
         </span>
@@ -157,13 +166,15 @@ export default function HomePage() {
         <LoadingScreen />
       ) : isError ? (
         <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Greska pri ucitavanju. Pokusajte ponovo.
+          Greška pri učitavanju. Pokušajte ponovo.
         </div>
       ) : data?.data.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
           {tab === 'subscribed'
             ? 'Ne pratite nijednu organizaciju. Klikni "Zaprati" na stranici organizacije.'
-            : 'Nema kvizova za zadate filtere.'}
+            : tab === 'archive'
+              ? 'Nema prošlih kvizova za zadate filtere.'
+              : 'Nema kvizova za zadate filtere.'}
         </div>
       ) : (
         <div className={isFetching ? 'is-fetching' : undefined}>

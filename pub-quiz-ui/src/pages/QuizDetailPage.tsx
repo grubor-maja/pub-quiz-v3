@@ -36,7 +36,7 @@ export default function QuizDetailPage() {
   if (isError || !quiz) {
     return (
       <div style={{ padding: '80px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Kviz nije pronadjen.
+        Kviz nije pronađen.
         <Link to="/" style={{ display: 'block', marginTop: 12, color: 'var(--accent-amber)' }}>
           Nazad na listu
         </Link>

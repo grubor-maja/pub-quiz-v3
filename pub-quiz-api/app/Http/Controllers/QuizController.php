@@ -10,9 +10,20 @@ class QuizController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $archive = $request->boolean('archive');
+
         $query = Quiz::published()
-            ->with('organization:id,name,slug,logo_url')
-            ->orderBy('quiz_date', 'desc');
+            ->with('organization:id,name,slug,logo_url');
+
+        // Default: only upcoming quizzes (today onward), ordered ascending (nearest first).
+        // Archive mode: only past quizzes, ordered descending (most recent past first).
+        if ($archive) {
+            $query->whereDate('quiz_date', '<', now()->toDateString())
+                  ->orderBy('quiz_date', 'desc');
+        } else {
+            $query->whereDate('quiz_date', '>=', now()->toDateString())
+                  ->orderBy('quiz_date', 'asc');
+        }
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -153,7 +164,7 @@ class QuizController extends Controller
         $descParts = [];
         if ($quiz->organization) $descParts[] = "Organizator: {$quiz->organization->name}";
         if ($quiz->entry_fee !== null) $descParts[] = "Kotizacija: {$quiz->entry_fee} din po timu";
-        $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} clanova";
+        $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} članova";
         if ($quiz->contact_phone) $descParts[] = "Kontakt: {$quiz->contact_phone}";
         $descParts[] = "Detalji: {$eventUrl}";
         $description = implode("\n", $descParts);

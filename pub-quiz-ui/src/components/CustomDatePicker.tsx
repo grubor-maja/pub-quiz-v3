@@ -10,7 +10,7 @@ interface Props {
 }
 
 const MONTHS_SR = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar']
-const DAYS_SR = ['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned']
+const DAYS_SR = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned']
 
 function formatBadge(iso: string) {
   if (!iso) return null
@@ -230,7 +230,7 @@ export default function CustomDatePicker({ label, value, onChange, min, max }: P
             </FooterBtn>
             {value && (
               <FooterBtn onClick={() => { onChange(''); setOpen(false) }}>
-                Ocisti
+                Očisti
               </FooterBtn>
             )}
           </div>

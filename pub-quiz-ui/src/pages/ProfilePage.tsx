@@ -1,13 +1,16 @@
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Heart, Mail, User as UserIcon, Bell, Building2 } from 'lucide-react'
+import { Heart, Mail, User as UserIcon, Bell, Building2, ChevronDown, ChevronRight, Archive } from 'lucide-react'
 import { fetchFavorites, fetchSubscriptions } from '../api'
 import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
 import { kvizWord } from '../lib/utils'
+import type { Quiz } from '../types'
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const [pastOpen, setPastOpen] = useState(false)
 
   const { data: favorites, isLoading, isError } = useQuery({
     queryKey: ['favorites'],
@@ -20,6 +23,18 @@ export default function ProfilePage() {
     queryFn: fetchSubscriptions,
     enabled: !!user,
   })
+
+  const { upcoming, past } = useMemo(() => {
+    const todayIso = new Date().toISOString().slice(0, 10)
+    const upcoming: Quiz[] = []
+    const past: Quiz[] = []
+    for (const q of favorites ?? []) {
+      const d = (q.quiz_date ?? '').slice(0, 10)
+      if (d && d < todayIso) past.push(q)
+      else upcoming.push(q)
+    }
+    return { upcoming, past }
+  }, [favorites])
 
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? '?'
 
@@ -101,17 +116,17 @@ export default function ProfilePage() {
           Moji favoriti
         </h2>
         <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {favorites ? `${favorites.length} ${kvizWord(favorites.length)}` : ''}
+          {favorites ? `${upcoming.length} ${kvizWord(upcoming.length)}` : ''}
         </span>
       </div>
 
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Ucitavanje...
+          Učitavanje...
         </div>
       ) : isError ? (
         <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Greska pri ucitavanju favorita.
+          Greška pri učitavanju favorita.
         </div>
       ) : !favorites || favorites.length === 0 ? (
         <div style={{
@@ -123,13 +138,67 @@ export default function ProfilePage() {
           color: 'var(--text-muted)',
           fontSize: 13,
         }}>
-          Jos uvek nemas omiljene kvizove. Klikni na srce na kartici kviza da ga dodas.
+          Još uvek nemaš omiljene kvizove. Klikni na srce na kartici kviza da ga dodaš.
+        </div>
+      ) : upcoming.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px 20px',
+          background: 'var(--bg-surface)',
+          border: '0.5px dashed var(--border-subtle)',
+          borderRadius: 12,
+          color: 'var(--text-muted)',
+          fontSize: 13,
+        }}>
+          Nemaš predstojećih omiljenih kvizova. Pogledaj prošle ispod.
         </div>
       ) : (
         <div className="card-grid">
-          {favorites.map(quiz => (
+          {upcoming.map(quiz => (
             <QuizCard key={quiz.id} quiz={{ ...quiz, is_favorited: true }} />
           ))}
+        </div>
+      )}
+
+      {/* Past favorites (collapsible) */}
+      {past.length > 0 && (
+        <div style={{ marginTop: 30 }}>
+          <button
+            onClick={() => setPastOpen(o => !o)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '12px 14px',
+              background: 'var(--bg-surface)',
+              border: '0.5px solid var(--border-subtle)',
+              borderRadius: 10,
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              fontSize: 13,
+              fontWeight: 500,
+              textAlign: 'left',
+              fontFamily: 'inherit',
+            }}
+          >
+            {pastOpen
+              ? <ChevronDown size={14} strokeWidth={1.8} style={{ color: 'var(--text-muted)' }} />
+              : <ChevronRight size={14} strokeWidth={1.8} style={{ color: 'var(--text-muted)' }} />}
+            <Archive size={13} strokeWidth={1.8} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ flex: 1 }}>Prošli favoriti</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {past.length} {kvizWord(past.length)}
+            </span>
+          </button>
+
+          {pastOpen && (
+            <div className="card-grid" style={{ marginTop: 14, opacity: 0.75 }}>
+              {past.map(quiz => (
+                <QuizCard key={quiz.id} quiz={{ ...quiz, is_favorited: true }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

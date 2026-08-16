@@ -47,7 +47,7 @@ export default function Toolbar({
           type="text"
           value={searchInput}
           onChange={e => onSearchChange(e.target.value)}
-          placeholder="Pretrazi kvizove po nazivu ili lokaciji…"
+          placeholder="Pretraži kvizove po nazivu ili lokaciji…"
           style={{
             background: 'none',
             border: 'none',

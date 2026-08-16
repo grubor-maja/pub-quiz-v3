@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
       })
       navigate('/login', {
         replace: true,
-        state: { successMessage: 'Lozinka je uspesno promenjena. Prijavi se sa novom lozinkom.' },
+        state: { successMessage: 'Lozinka je uspešno promenjena. Prijavi se sa novom lozinkom.' },
       })
     } catch (err: any) {
       const respData = err?.response?.data
@@ -53,10 +53,10 @@ export default function ResetPasswordPage() {
         if (Array.isArray(first) && typeof first[0] === 'string') {
           setError(first[0])
         } else {
-          setError(respData?.message ?? 'Neuspesno resetovanje lozinke.')
+          setError(respData?.message ?? 'Neuspešno resetovanje lozinke.')
         }
       } else {
-        setError(respData?.message ?? 'Neuspesno resetovanje lozinke.')
+        setError(respData?.message ?? 'Neuspešno resetovanje lozinke.')
       }
     } finally {
       setSubmitting(false)
@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
         <div style={authCardStyle}>
           {missingToken ? (
             <>
-              <div style={authErrorStyle}>Nevazeci link.</div>
+              <div style={authErrorStyle}>Nevažeći link.</div>
               <div style={{
                 marginTop: 6,
                 fontSize: 12,
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
                 color: 'var(--text-muted)',
               }}>
                 <Link to="/forgot-password" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
-                  Zatrazi novi link
+                  Zatraži novi link
                 </Link>
               </div>
             </>
@@ -125,7 +125,7 @@ export default function ResetPasswordPage() {
                 disabled={submitting}
                 style={{ ...authSubmitStyle, opacity: submitting ? 0.7 : 1 }}
               >
-                {submitting ? 'Cuvanje...' : 'Postavi novu lozinku'}
+                {submitting ? 'Čuvanje...' : 'Postavi novu lozinku'}
               </button>
 
               <div style={{

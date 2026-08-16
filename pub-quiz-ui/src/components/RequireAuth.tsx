@@ -14,7 +14,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
         color: 'var(--text-muted)',
         fontSize: 13,
       }}>
-        Ucitavanje...
+        Učitavanje...
       </div>
     )
   }

@@ -52,7 +52,7 @@ export default function OrgChipsBar({ orgs, selected, onToggle, onClearAll }: Pr
                 padding: '4px 6px',
               }}
             >
-              Ocisti
+              Očisti
             </button>
           )}
           <ArrowBtn onClick={() => scroll('left')} aria-label="Scroll levo">

@@ -107,7 +107,7 @@ export default function LoginPage() {
               Zaboravio si lozinku?
             </Link>
             <div style={{ color: 'var(--text-muted)' }}>
-              Nemas nalog?{' '}
+              Nemaš nalog?{' '}
               <Link to="/register" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
                 Registruj se
               </Link>

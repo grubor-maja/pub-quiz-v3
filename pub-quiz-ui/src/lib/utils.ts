@@ -46,4 +46,4 @@ export function pluralSr(n: number, singular: string, paucal: string, plural: st
 
 export const kvizWord = (n: number) => pluralSr(n, 'kviz', 'kviza', 'kvizova')
 export const rezultatWord = (n: number) => pluralSr(n, 'rezultat', 'rezultata', 'rezultata')
-export const clanWord = (n: number) => pluralSr(n, 'clan', 'clana', 'clanova')
+export const clanWord = (n: number) => pluralSr(n, 'član', 'člana', 'članova')

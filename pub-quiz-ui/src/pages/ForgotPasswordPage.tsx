@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
       await authForgotPassword(email.trim())
       setSuccess(true)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Doslo je do greske. Pokusaj ponovo.')
+      setError(err?.response?.data?.message ?? 'Došlo je do greške. Pokušaj ponovo.')
     } finally {
       setSubmitting(false)
     }
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
           margin: '0 0 22px',
           lineHeight: 1.5,
         }}>
-          Unesi svoj email i poslacemo ti link za resetovanje lozinke.
+          Unesi svoj email i poslaćemo ti link za resetovanje lozinke.
         </p>
 
         <form onSubmit={handleSubmit} style={authCardStyle}>
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
                 disabled={submitting}
                 style={{ ...authSubmitStyle, opacity: submitting ? 0.7 : 1 }}
               >
-                {submitting ? 'Slanje...' : 'Posalji link'}
+                {submitting ? 'Slanje...' : 'Pošalji link'}
               </button>
             </>
           )}

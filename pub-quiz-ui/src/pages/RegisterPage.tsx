@@ -140,7 +140,7 @@ export default function RegisterPage() {
             textAlign: 'center',
             color: 'var(--text-muted)',
           }}>
-            Vec imas nalog?{' '}
+            Već imaš nalog?{' '}
             <Link to="/login" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
               Prijavi se
             </Link>

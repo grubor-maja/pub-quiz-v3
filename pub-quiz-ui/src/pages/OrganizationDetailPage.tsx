@@ -37,7 +37,7 @@ export default function OrganizationDetailPage() {
   if (isError || !data || !data.organization) {
     return (
       <div style={{ padding: '80px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Organizacija nije pronadjena.
+        Organizacija nije pronađena.
         <Link to="/organizacije" style={{ display: 'block', marginTop: 12, color: 'var(--accent-amber)' }}>
           Nazad
         </Link>

@@ -158,7 +158,7 @@ export default function QuizCard({ quiz, compact = false }: Props) {
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
           }}>
-            {quiz.description ?? 'Ne postoji info za ovaj kviz, pogledaj Instagram stranicu za vise detalja.'}
+            {quiz.description ?? 'Ne postoji info za ovaj kviz, pogledaj Instagram stranicu za više detalja.'}
           </p>
         )}
       </div>

@@ -513,7 +513,8 @@ html, body {
   overflow-x: clip;
 }
 
-/* Prevent iOS zoom on focus by ensuring form inputs are >= 16px on mobile. */
+/* Prevent iOS zoom on focus by ensuring form inputs are >= 16px on mobile.
+   !important is required to defeat inline font-size styles on inputs. */
 @media (max-width: 640px) {
   input[type="text"],
   input[type="email"],
@@ -524,7 +525,7 @@ html, body {
   input[type="number"],
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

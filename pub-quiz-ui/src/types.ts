@@ -51,6 +51,7 @@ export interface QuizFilters {
   date_to?: string
   page?: number
   subscribed?: boolean
+  archive?: boolean
 }
 
 export interface User {

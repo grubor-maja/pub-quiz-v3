@@ -151,7 +151,7 @@ export default function MapPage() {
 
   const handleLocate = () => {
     if (!navigator.geolocation) {
-      setLocError('Geolokacija nije podrzana u ovom browseru.')
+      setLocError('Geolokacija nije podržana u ovom browseru.')
       return
     }
     setLocating(true)
@@ -224,7 +224,7 @@ export default function MapPage() {
           }}
         >
           <Locate size={13} />
-          {userLoc ? 'Blizu mene' : locating ? 'Trazim...' : 'Blizu mene'}
+          {userLoc ? 'Blizu mene' : locating ? 'Tražim...' : 'Blizu mene'}
         </button>
 
         {userLoc && (
@@ -255,7 +255,7 @@ export default function MapPage() {
               padding: '4px 6px',
             }}
           >
-            Ocisti lokaciju
+            Očisti lokaciju
           </button>
         )}
       </div>
@@ -276,7 +276,7 @@ export default function MapPage() {
 
       <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 12px' }}>
         {isLoading
-          ? 'Ucitavanje...'
+          ? 'Učitavanje...'
           : quizzes.length === 0
             ? 'Nema kvizova za zadate filtere.'
             : `${groups.length} lokacija · ${quizzes.length} kvizova`
@@ -285,7 +285,7 @@ export default function MapPage() {
 
       {isError ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-          Greska pri ucitavanju mape.
+          Greška pri učitavanju mape.
         </div>
       ) : (
         <div style={{
