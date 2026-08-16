@@ -147,7 +147,7 @@ class DefaultExtractor implements ExtractorInterface
 Analiziraj Instagram objavu pub kviz organizacije na srpskom.
 Vrati SAMO validan JSON, bez objasnjenja, u ovom obliku:
 
-{"is_quiz_post": true|false, "quizzes": [ {...}, {...} ]}
+{"is_quiz_post": true|false, "is_cancellation": true|false, "quizzes": [ {...}, {...} ]}
 
 KORAK 1 - DA LI JE OVO NAJAVA KVIZA?
 Postavi "is_quiz_post": false i vrati prazan niz "quizzes" ako je objava:
@@ -160,6 +160,14 @@ VAZNO: merodavan je TEKST OPISA, ne slika. Slika je cesto mem ili zanimljivost
 koja sluzi samo da privuce paznju. Ako opis sadrzi datume kvizova, objava JESTE
 najava kviza bez obzira na to sto slika prikazuje nesto sasvim drugo.
 Slika se koristi samo kao pomoc pri odredjivanju naslova.
+
+KORAK 1b - DA LI JE OVO OTKAZIVANJE?
+Postavi "is_cancellation": true ako objava javlja da se kviz NE odrzava:
+- tekst tipa "otkazujemo", "otkazan", "odlazemo", "necemo raditi", "ne radimo veceras"
+- ILI je na SLICI pecat/traka sa recju "OTKAZANO" ili "OTKAZUJEMO"
+U tom slucaju i dalje popuni "quizzes" sa datumom i naslovom kviza koji se otkazuje,
+da bi se znalo NA KOJI kviz se odnosi. Ako pise "veceras" ili "danas", to je
+datum objave. Inace "is_cancellation": false.
 
 KORAK 2 - KOLIKO KVIZOVA IMA U OBJAVI?
 - Ako objava sadrzi RASPORED (vise linija oblika "10.08. Naziv kviza", "11.08. Drugi naziv"),
@@ -296,12 +304,24 @@ PROMPT;
             return [];
         }
 
+        // A cancellation still names a quiz; the flag rides along on each
+        // candidate so the caller cancels instead of creating.
+        $cancelled = ($raw['is_cancellation'] ?? false) === true;
+
         if (isset($raw['quizzes']) && is_array($raw['quizzes'])) {
-            return array_values(array_filter($raw['quizzes'], 'is_array'));
+            $candidates = array_values(array_filter($raw['quizzes'], 'is_array'));
+        } elseif (array_key_exists('quiz_date', $raw)) {
+            // Bare object: treat as a single candidate.
+            $candidates = [$raw];
+        } else {
+            return [];
         }
 
-        // Bare object: treat as a single candidate.
-        return array_key_exists('quiz_date', $raw) ? [$raw] : [];
+        return array_map(function (array $c) use ($cancelled) {
+            $c['is_cancelled'] = $cancelled || ($c['is_cancelled'] ?? false) === true;
+
+            return $c;
+        }, $candidates);
     }
 
     /**
@@ -321,6 +341,7 @@ PROMPT;
                 'min_team_members' => null,
                 'max_team_members' => null,
                 'contact_phone' => null,
+                'is_cancelled' => false,
             ], array_filter($c, fn ($v) => $v !== null && $v !== ''));
 
             // Organization fallbacks only. Anything the organizer never stated

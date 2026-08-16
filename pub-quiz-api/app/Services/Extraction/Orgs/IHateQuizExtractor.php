@@ -33,6 +33,9 @@ class IHateQuizExtractor extends DefaultExtractor
   price o serijama i estradi). Te objave NISU najave kvizova, cak i kad pominju
   godine ili datume iz proslosti - tada vrati "is_quiz_post": false.
 - Recenice tipa "USKORO - VRUC VETAR KVIZ" bez konkretnog datuma NISU kviz.
+- Otkazivanje javljaju tako sto PONOVE originalnu najavu sa ROZE TRAKOM preko
+  slike na kojoj pise "OTKAZANO". Ako vidis takvu traku na slici, postavi
+  "is_cancellation": true i zadrzi naslov i datum tog kviza sa slike/teksta.
 - Kviz se uvek odrzava u njihovom klubu PUB QUIZ HOUSE, Brace Jugovica 16, Beograd.
   Ne izvlaci neko drugo mesto iz teksta o serijama ili gradovima iz zanimljivosti.
 - Termini koje objavljuju: sreda 20:30, subota 21:00, ostali dani 20:30.
@@ -52,7 +55,7 @@ RULES;
     ): array {
         return array_map(function (array $c) {
             $date = $c['quiz_date'] ?? null;
-            if (!is_string($date) || ($c['quiz_time'] ?? null) !== null) {
+            if (!is_string($date) || ($c['quiz_time'] ?? null) !== null || ($c['is_cancelled'] ?? false)) {
                 return $c;
             }
 

@@ -107,6 +107,21 @@ export default function QuizDetailPage() {
             isFavorited={quiz.is_favorited ?? false}
             size={16}
           />
+
+          {quiz.status === 'cancelled' && (
+            <div style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 10,
+              background: 'rgba(220,38,38,0.12)',
+              border: '0.5px solid rgba(220,38,38,0.4)',
+              color: '#f87171',
+              fontSize: 13,
+              fontWeight: 600,
+            }}>
+              Ovaj kviz je otkazan.
+            </div>
+          )}
         </div>
 
         {/* Image - 4:5 portrait like Instagram */}

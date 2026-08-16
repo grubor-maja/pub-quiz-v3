@@ -51,6 +51,7 @@ export default function QuizCard({ quiz, compact = false }: Props) {
   const gradientIndex = quiz.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % FALLBACK_GRADIENTS.length
   const gradient = FALLBACK_GRADIENTS[gradientIndex] ?? FALLBACK_GRADIENTS[0]
   const teamSize = teamSizeShort(quiz.min_team_members, quiz.max_team_members)
+  const isCancelled = quiz.status === 'cancelled'
 
   return (
     <Link
@@ -66,7 +67,12 @@ export default function QuizCard({ quiz, compact = false }: Props) {
       }}
     >
       {/* Image */}
-      <div style={{ position: 'relative', aspectRatio: compact ? '1/1' : '4/5', overflow: 'hidden' }}>
+      <div style={{
+        position: 'relative',
+        aspectRatio: compact ? '1/1' : '4/5',
+        overflow: 'hidden',
+        filter: isCancelled ? 'grayscale(0.85)' : undefined,
+      }}>
         {quiz.cover_image_url ? (
           <img
             src={quiz.cover_image_url}
@@ -79,9 +85,33 @@ export default function QuizCard({ quiz, compact = false }: Props) {
         )}
 
         {quiz.quiz_date && (
-          <span style={{ ...badge, left: 7, color: 'var(--accent-amber)' }}>
+          <span style={{
+            ...badge,
+            left: 7,
+            color: isCancelled ? 'var(--text-muted)' : 'var(--accent-amber)',
+            textDecoration: isCancelled ? 'line-through' : undefined,
+          }}>
             <Calendar size={9} />
             {formatDateBadge(quiz.quiz_date)}
+          </span>
+        )}
+
+        {isCancelled && (
+          <span style={{
+            position: 'absolute',
+            top: '50%',
+            left: 0,
+            right: 0,
+            transform: 'translateY(-50%) rotate(-8deg)',
+            textAlign: 'center',
+            background: 'rgba(220,38,38,0.92)',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            padding: '5px 0',
+          }}>
+            OTKAZANO
           </span>
         )}
 

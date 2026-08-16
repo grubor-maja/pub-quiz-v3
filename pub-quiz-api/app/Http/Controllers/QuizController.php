@@ -86,7 +86,9 @@ class QuizController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $quiz = Quiz::published()
+        // Cancelled quizzes stay reachable so anyone who favorited one, or is
+        // holding a link, sees that it was called off instead of a 404.
+        $quiz = Quiz::whereIn('status', ['published', 'cancelled'])
             ->with('organization:id,name,slug,logo_url,instagram_handle,description')
             ->where('slug', $slug)
             ->firstOrFail();

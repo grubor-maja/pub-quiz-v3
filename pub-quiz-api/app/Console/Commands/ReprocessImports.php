@@ -56,10 +56,25 @@ class ReprocessImports extends Command
             }
         }
 
+        // Cancellations deferred for want of a quiz to cancel can succeed now
+        // that the rest of the batch has been imported.
+        if ($deferred > 0) {
+            $this->info("Second pass over {$deferred} deferred import(s)...");
+            foreach ($imports as $import) {
+                if ($import->status !== 'pending') {
+                    continue;
+                }
+                $job->processImport($import, $import->organization, $extractor);
+                if ($import->status === 'processed') {
+                    $deferred--;
+                }
+            }
+        }
+
         $this->info("Done. {$recovered} of {$imports->count()} imports now yield quizzes.");
 
         if ($deferred > 0) {
-            $this->warn("{$deferred} import(s) could not be evaluated (rate limit / outage). Re-run with --status=pending later.");
+            $this->warn("{$deferred} import(s) still deferred (rate limit, or a cancellation whose quiz was never announced).");
         }
 
         return 0;

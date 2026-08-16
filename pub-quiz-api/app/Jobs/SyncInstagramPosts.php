@@ -56,6 +56,8 @@ class SyncInstagramPosts implements ShouldQueue
             return;
         }
 
+        $touched = [];
+
         foreach ($posts as $post) {
             $postId = $post['id'] ?? $post['shortCode'] ?? null;
             if (!$postId) continue;
@@ -82,6 +84,31 @@ class SyncInstagramPosts implements ShouldQueue
                 continue;
             }
 
+            $this->processImport($import, $org, $extractor);
+            $touched[] = $import->id;
+        }
+
+        $this->retryDeferred($touched, $org, $extractor);
+    }
+
+    /**
+     * Instagram hands back the newest posts first, so a cancellation is seen
+     * before the announcement it refers to and gets deferred for want of a quiz
+     * to cancel. Everything has been imported by the end of the pass, so give
+     * those one more go rather than leaving the quiz live until tomorrow.
+     *
+     * @param  array<int, string>  $importIds
+     */
+    private function retryDeferred(array $importIds, Organization $org, QuizExtractionService $extractor): void
+    {
+        if ($importIds === []) {
+            return;
+        }
+
+        $deferred = InstagramImport::whereIn('id', $importIds)->where('status', 'pending')->get();
+
+        foreach ($deferred as $import) {
+            Log::info("Instagram sync: second pass for {$import->instagram_post_id}");
             $this->processImport($import, $org, $extractor);
         }
     }
@@ -121,6 +148,20 @@ class SyncInstagramPosts implements ShouldQueue
                 ? $this->downloadAndStoreImage($import->image_url, $import->instagram_post_id)
                 : null;
             $description = $isSchedule ? null : $import->caption;
+
+            // A cancellation names the quiz being called off rather than a new
+            // one. It can only act on a quiz that already exists, so if the
+            // announcement has not been imported yet the post stays pending and
+            // the next run - by which time it will exist - applies it.
+            if ($this->isCancellation($candidates)) {
+                $applied = $this->applyCancellations($candidates, $org);
+
+                $import->status = $applied ? 'processed' : 'pending';
+                $import->error_message = $applied ? null : 'Cancellation has no matching quiz yet; will retry';
+                $import->save();
+
+                return;
+            }
 
             $created = 0;
             $enriched = 0;
@@ -203,6 +244,68 @@ class SyncInstagramPosts implements ShouldQueue
                 'status' => 'published',
             ]
         );
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $candidates
+     */
+    private function isCancellation(array $candidates): bool
+    {
+        foreach ($candidates as $candidate) {
+            if (($candidate['is_cancelled'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Mark the named quizzes as cancelled so they drop off the site.
+     * Returns false when none of them could be found, which means the
+     * announcement has not been imported yet and we should try again later.
+     *
+     * @param  array<int, array<string, mixed>>  $candidates
+     */
+    private function applyCancellations(array $candidates, Organization $org): bool
+    {
+        $applied = false;
+
+        foreach ($candidates as $candidate) {
+            $date = $candidate['quiz_date'] ?? null;
+            $title = $candidate['title'] ?? null;
+            if (!is_string($date)) {
+                continue;
+            }
+
+            $quiz = is_string($title) && $title !== ''
+                ? Quiz::findSimilar($org->id, $date, $title)
+                : null;
+
+            // Fall back to the only quiz that organization runs that day.
+            if ($quiz === null) {
+                $sameDay = Quiz::where('organization_id', $org->id)->whereDate('quiz_date', $date)->get();
+                $quiz = $sameDay->count() === 1 ? $sameDay->first() : null;
+            }
+
+            if ($quiz === null) {
+                Log::warning('Instagram sync: cancellation with no matching quiz', [
+                    'org' => $org->slug,
+                    'quiz_date' => $date,
+                    'title' => $title,
+                ]);
+                continue;
+            }
+
+            if ($quiz->status !== 'cancelled') {
+                $quiz->update(['status' => 'cancelled']);
+                Log::info("Instagram sync: cancelled quiz '{$quiz->title}' ({$quiz->quiz_date})");
+            }
+
+            $applied = true;
+        }
+
+        return $applied;
     }
 
     /**
