@@ -16,8 +16,9 @@ class ApifyService
         $this->actorId = config('services.apify.actor_id');
     }
 
-    public function fetchPostsForHandle(string $instagramHandle, int $limit = 15): array
+    public function fetchPostsForHandle(string $instagramHandle, ?int $limit = null): array
     {
+        $limit ??= (int) config('services.apify.post_limit', 60);
         $url = "https://api.apify.com/v2/acts/{$this->actorId}/run-sync-get-dataset-items";
 
         $response = Http::withToken($this->token)
