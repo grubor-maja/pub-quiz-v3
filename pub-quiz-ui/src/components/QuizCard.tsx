@@ -81,7 +81,46 @@ export default function QuizCard({ quiz, compact = false }: Props) {
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', background: gradient }} />
+          // No artwork yet - organizers usually publish a quiz's picture only a
+          // day or two ahead. Show the organizer's mark so the card reads as
+          // "not announced yet" rather than broken; enrichment swaps in the real
+          // image as soon as their post appears.
+          <div style={{
+            width: '100%',
+            height: '100%',
+            background: gradient,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {quiz.organization.logo_url ? (
+              <img
+                src={quiz.organization.logo_url}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                style={{
+                  width: '46%',
+                  maxWidth: 110,
+                  aspectRatio: '1',
+                  objectFit: 'contain',
+                  borderRadius: '50%',
+                  opacity: 0.3,
+                  filter: 'grayscale(0.4)',
+                }}
+              />
+            ) : (
+              <span style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: compact ? 22 : 28,
+                fontWeight: 600,
+                color: 'rgba(237,234,227,0.16)',
+                letterSpacing: '0.04em',
+              }}>
+                {quiz.organization.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
         )}
 
         {quiz.quiz_date && (
