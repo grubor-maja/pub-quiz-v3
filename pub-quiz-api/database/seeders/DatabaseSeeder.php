@@ -44,8 +44,9 @@ class DatabaseSeeder extends Seeder
                 'default_quiz_time' => '20:30',
                 'default_entry_fee' => 500,
                 'default_contact_phone' => '064/66-666-36',
+                // They state a minimum of 2 but never an upper limit.
                 'default_min_team_members' => 2,
-                'default_max_team_members' => 6,
+                'default_max_team_members' => null,
             ],
         ];
 

@@ -22,8 +22,8 @@ export interface Quiz {
   location: string | null
   address: string | null
   entry_fee: number | null
-  min_team_members: number
-  max_team_members: number
+  min_team_members: number | null
+  max_team_members: number | null
   contact_phone: string | null
   cover_image_url: string | null
   instagram_post_url: string | null

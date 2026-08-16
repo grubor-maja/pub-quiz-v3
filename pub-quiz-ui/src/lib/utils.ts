@@ -47,3 +47,22 @@ export function pluralSr(n: number, singular: string, paucal: string, plural: st
 export const kvizWord = (n: number) => pluralSr(n, 'kviz', 'kviza', 'kvizova')
 export const rezultatWord = (n: number) => pluralSr(n, 'rezultat', 'rezultata', 'rezultata')
 export const clanWord = (n: number) => pluralSr(n, 'član', 'člana', 'članova')
+
+/**
+ * Organizers often state only one side of the team size, or neither.
+ * Returns null when nothing is known so the caller can omit the field
+ * rather than show a made-up range.
+ */
+export function teamSizeShort(min: number | null, max: number | null): string | null {
+  if (min && max) return `${min}-${max}`
+  if (min) return `${min}+`
+  if (max) return `do ${max}`
+  return null
+}
+
+export function teamSizeLong(min: number | null, max: number | null): string | null {
+  if (min && max) return `${min}-${max} ${clanWord(max)}`
+  if (min) return `min. ${min} ${clanWord(min)}`
+  if (max) return `do ${max} ${clanWord(max)}`
+  return null
+}

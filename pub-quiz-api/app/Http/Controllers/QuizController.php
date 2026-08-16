@@ -164,7 +164,13 @@ class QuizController extends Controller
         $descParts = [];
         if ($quiz->organization) $descParts[] = "Organizator: {$quiz->organization->name}";
         if ($quiz->entry_fee !== null) $descParts[] = "Kotizacija: {$quiz->entry_fee} din po timu";
-        $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} članova";
+        if ($quiz->min_team_members && $quiz->max_team_members) {
+            $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} članova";
+        } elseif ($quiz->min_team_members) {
+            $descParts[] = "Timovi: min. {$quiz->min_team_members} članova";
+        } elseif ($quiz->max_team_members) {
+            $descParts[] = "Timovi: do {$quiz->max_team_members} članova";
+        }
         if ($quiz->contact_phone) $descParts[] = "Kontakt: {$quiz->contact_phone}";
         $descParts[] = "Detalji: {$eventUrl}";
         $description = implode("\n", $descParts);

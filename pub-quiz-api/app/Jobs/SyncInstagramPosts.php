@@ -111,21 +111,31 @@ class SyncInstagramPosts implements ShouldQueue
                 return;
             }
 
-            // Downloaded once and shared by every quiz extracted from this post.
-            $localImageUrl = $import->image_url
+            // A post announcing a single quiz describes and pictures that quiz.
+            // A monthly schedule does neither: its caption lists the whole month
+            // and its cover art is generic, so copying them onto every entry
+            // would show 20 identical cards with a caption about other quizzes.
+            $isSchedule = count($candidates) > 1;
+
+            $localImageUrl = (!$isSchedule && $import->image_url)
                 ? $this->downloadAndStoreImage($import->image_url, $import->instagram_post_id)
                 : null;
+            $description = $isSchedule ? null : $import->caption;
 
             $created = 0;
+            $enriched = 0;
             $firstQuizId = null;
 
             foreach ($candidates as $candidate) {
-                $quiz = $this->createQuiz($candidate, $org, $import, $localImageUrl);
+                $quiz = $this->createQuiz($candidate, $org, $import, $localImageUrl, $description);
                 $firstQuizId ??= $quiz->id;
 
                 if ($quiz->wasRecentlyCreated) {
                     $created++;
                     Log::info("Instagram sync: created quiz '{$quiz->title}' ({$quiz->quiz_date})");
+                } elseif ($this->enrich($quiz, $candidate, $localImageUrl, $description)) {
+                    $enriched++;
+                    Log::info("Instagram sync: enriched quiz '{$quiz->title}' ({$quiz->quiz_date})");
                 } else {
                     Log::info("Instagram sync: duplicate skipped '{$quiz->title}' ({$quiz->quiz_date})");
                 }
@@ -135,7 +145,7 @@ class SyncInstagramPosts implements ShouldQueue
             $import->status = 'processed';
             $import->save();
 
-            Log::info("Instagram sync: post {$import->instagram_post_id} produced {$created} new quiz(es)");
+            Log::info("Instagram sync: post {$import->instagram_post_id} produced {$created} new quiz(es), enriched {$enriched}");
         } catch (ExtractionUnavailableException $e) {
             // Transient (rate limit / outage). Leave the import pending so the next
             // run retries it - marking it skipped would lose the post for good.
@@ -159,7 +169,8 @@ class SyncInstagramPosts implements ShouldQueue
         array $candidate,
         Organization $org,
         InstagramImport $import,
-        ?string $localImageUrl
+        ?string $localImageUrl,
+        ?string $description
     ): Quiz {
         $date = $candidate['quiz_date'];
         $title = $candidate['title'] ?: "Kviz {$org->name} {$date}";
@@ -183,15 +194,55 @@ class SyncInstagramPosts implements ShouldQueue
                 'location' => $candidate['location'] ?? $import->location_name ?? null,
                 'address' => $candidate['address'] ?? null,
                 'entry_fee' => $candidate['entry_fee'] ?? null,
-                'min_team_members' => $candidate['min_team_members'] ?? 1,
-                'max_team_members' => $candidate['max_team_members'] ?? 6,
+                'min_team_members' => $candidate['min_team_members'] ?? null,
+                'max_team_members' => $candidate['max_team_members'] ?? null,
                 'contact_phone' => $candidate['contact_phone'] ?? null,
-                'description' => $import->caption,
+                'description' => $description,
                 'cover_image_url' => $localImageUrl,
                 'instagram_post_url' => $import->instagram_post_url,
                 'status' => 'published',
             ]
         );
+    }
+
+    /**
+     * A quiz first seen in a monthly schedule has no artwork and no description.
+     * When the dedicated post for that evening turns up later, fill in what is
+     * still missing. Only empty fields are written, so a specific announcement
+     * is never overwritten by a vaguer one.
+     */
+    private function enrich(
+        Quiz $quiz,
+        array $candidate,
+        ?string $localImageUrl,
+        ?string $description
+    ): bool {
+        $fill = [
+            'quiz_time' => $candidate['quiz_time'] ?? null,
+            'location' => $candidate['location'] ?? null,
+            'address' => $candidate['address'] ?? null,
+            'entry_fee' => $candidate['entry_fee'] ?? null,
+            'min_team_members' => $candidate['min_team_members'] ?? null,
+            'max_team_members' => $candidate['max_team_members'] ?? null,
+            'contact_phone' => $candidate['contact_phone'] ?? null,
+            'description' => $description,
+            'cover_image_url' => $localImageUrl,
+        ];
+
+        $updates = [];
+        foreach ($fill as $field => $value) {
+            if ($value !== null && $quiz->{$field} === null) {
+                $updates[$field] = $value;
+            }
+        }
+
+        if ($updates === []) {
+            return false;
+        }
+
+        $quiz->update($updates);
+
+        return true;
     }
 
     private function uniqueSlug(string $title, string $date): string

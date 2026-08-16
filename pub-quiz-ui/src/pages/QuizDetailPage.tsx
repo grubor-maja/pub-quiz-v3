@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft, CalendarPlus } from 'lucide-react'
 import { fetchQuiz } from '../api'
-import { formatDate, formatPrice, formatTime, clanWord } from '../lib/utils'
+import { formatDate, formatPrice, formatTime, teamSizeLong } from '../lib/utils'
 import HeartButton from '../components/HeartButton'
 
 export default function QuizDetailPage() {
@@ -43,6 +43,8 @@ export default function QuizDetailPage() {
       </div>
     )
   }
+
+  const teamSize = teamSizeLong(quiz.min_team_members, quiz.max_team_members)
 
   return (
     <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
@@ -170,11 +172,13 @@ export default function QuizDetailPage() {
               label="Kotizacija"
               value={`${formatPrice(quiz.entry_fee)} po timu`}
             />
-            <InfoRow
-              icon={<Users size={14} />}
-              label="Tim"
-              value={`${quiz.min_team_members}-${quiz.max_team_members} ${clanWord(quiz.max_team_members)}`}
-            />
+            {teamSize && (
+              <InfoRow
+                icon={<Users size={14} />}
+                label="Tim"
+                value={teamSize}
+              />
+            )}
             {quiz.contact_phone && (
               <InfoRow
                 icon={<Phone size={14} />}

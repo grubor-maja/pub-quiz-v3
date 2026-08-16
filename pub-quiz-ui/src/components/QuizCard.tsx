@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Clock, Coins, Users, Calendar } from 'lucide-react'
-import { formatTime, formatPrice } from '../lib/utils'
+import { formatTime, formatPrice, teamSizeShort } from '../lib/utils'
 import type { Quiz } from '../types'
 import HeartButton from './HeartButton'
 
@@ -50,6 +50,7 @@ interface Props {
 export default function QuizCard({ quiz, compact = false }: Props) {
   const gradientIndex = quiz.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % FALLBACK_GRADIENTS.length
   const gradient = FALLBACK_GRADIENTS[gradientIndex] ?? FALLBACK_GRADIENTS[0]
+  const teamSize = teamSizeShort(quiz.min_team_members, quiz.max_team_members)
 
   return (
     <Link
@@ -139,10 +140,12 @@ export default function QuizCard({ quiz, compact = false }: Props) {
             <Coins size={10} strokeWidth={1.7} />
             {formatPrice(quiz.entry_fee)}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Users size={10} strokeWidth={1.7} />
-            {quiz.min_team_members}-{quiz.max_team_members}
-          </span>
+          {teamSize && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Users size={10} strokeWidth={1.7} />
+              {teamSize}
+            </span>
+          )}
         </div>
 
         {/* Info (skipped in compact) */}

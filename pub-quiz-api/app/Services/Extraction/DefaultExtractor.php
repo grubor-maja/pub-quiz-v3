@@ -175,7 +175,10 @@ KORAK 3 - POLJA ZA SVAKI KVIZ
 - location: ime kafane/kluba (npr. "@nosatipub" -> "Nos a ti pub")
 - address: ulica i broj (npr. "Nusiceva 8")
 - entry_fee: cena u dinarima kao broj
-- min_team_members, max_team_members: opseg broja igraca u ekipi
+- min_team_members, max_team_members: broj igraca u ekipi.
+  NE POGADJAJ. Ako pise samo minimum ("ekipe od minimum 2 igraca"), postavi
+  min_team_members i ostavi max_team_members kao null. Ako nista ne pise,
+  oba su null.
 - contact_phone: broj telefona
 
 PRAVILA ZA NASLOV (title):
@@ -320,14 +323,16 @@ PROMPT;
                 'contact_phone' => null,
             ], array_filter($c, fn ($v) => $v !== null && $v !== ''));
 
-            // Organization fallbacks, then the global defaults.
+            // Organization fallbacks only. Anything the organizer never stated
+            // and the organization has no standing value for stays null - it is
+            // shown as unknown rather than guessed at.
             $merged['location'] ??= $org->default_location;
             $merged['address'] ??= $org->default_address;
             $merged['quiz_time'] ??= $this->formatTime($org->default_quiz_time);
             $merged['entry_fee'] ??= $org->default_entry_fee;
             $merged['contact_phone'] ??= $org->default_contact_phone;
-            $merged['min_team_members'] ??= $org->default_min_team_members ?? 1;
-            $merged['max_team_members'] ??= $org->default_max_team_members ?? 6;
+            $merged['min_team_members'] ??= $org->default_min_team_members;
+            $merged['max_team_members'] ??= $org->default_max_team_members;
 
             return $merged;
         }, $candidates);
