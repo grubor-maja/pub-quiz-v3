@@ -156,8 +156,23 @@ class SyncInstagramPosts implements ShouldQueue
             if ($this->isCancellation($candidates)) {
                 $applied = $this->applyCancellations($candidates, $org);
 
-                $import->status = $applied ? 'processed' : 'pending';
-                $import->error_message = $applied ? null : 'Cancellation has no matching quiz yet; will retry';
+                if ($applied) {
+                    $import->status = 'processed';
+                    $import->error_message = null;
+                } elseif ($this->isStillRelevant($candidates)) {
+                    // The announcement it refers to has probably not been imported
+                    // yet; the second pass, or tomorrow's run, will catch it.
+                    $import->status = 'pending';
+                    $import->error_message = 'Cancellation has no matching quiz yet; will retry';
+                } else {
+                    // Only past dates left. Either the quiz was never imported or
+                    // this was a misread of some unrelated post - retrying forever
+                    // would burn an AI call a day and never resolve.
+                    $import->status = 'skipped';
+                    $import->error_message = 'Cancellation refers only to past dates; giving up';
+                    Log::info("Instagram sync: stale cancellation dropped for {$import->instagram_post_id}");
+                }
+
                 $import->save();
 
                 return;
@@ -253,6 +268,26 @@ class SyncInstagramPosts implements ShouldQueue
     {
         foreach ($candidates as $candidate) {
             if (($candidate['is_cancelled'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Is there still anything worth cancelling? A quiz whose date has passed is
+     * already off the upcoming list, so deferring the post achieves nothing.
+     *
+     * @param  array<int, array<string, mixed>>  $candidates
+     */
+    private function isStillRelevant(array $candidates): bool
+    {
+        $today = now()->toDateString();
+
+        foreach ($candidates as $candidate) {
+            $date = $candidate['quiz_date'] ?? null;
+            if (is_string($date) && $date >= $today) {
                 return true;
             }
         }

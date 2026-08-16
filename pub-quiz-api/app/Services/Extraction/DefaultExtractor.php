@@ -162,7 +162,10 @@ najava kviza bez obzira na to sto slika prikazuje nesto sasvim drugo.
 Slika se koristi samo kao pomoc pri odredjivanju naslova.
 
 KORAK 1b - DA LI JE OVO OTKAZIVANJE?
-Postavi "is_cancellation": true ako objava javlja da se kviz NE odrzava:
+Ovo dolazi u obzir SAMO ako je "is_quiz_post" true. Zanimljivost o seriji, filmu
+ili poznatoj licnosti NIKADA nije otkazivanje, pa makar pominjala otkazivanje
+snimanja, prekid serije ili odlazak glumca - to se ne odnosi na kviz.
+Postavi "is_cancellation": true ako objava javlja da se KVIZ ne odrzava:
 - tekst tipa "otkazujemo", "otkazan", "odlazemo", "necemo raditi", "ne radimo veceras"
 - ILI je na SLICI pecat/traka sa recju "OTKAZANO" ili "OTKAZUJEMO"
 U tom slucaju i dalje popuni "quizzes" sa datumom i naslovom kviza koji se otkazuje,
