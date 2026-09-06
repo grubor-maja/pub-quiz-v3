@@ -50,14 +50,28 @@ else
 fi
 
 say "Adding swap"
-# The free ARM instance has plenty of RAM, but the smaller always-free shapes
-# have 1 GB, where composer install and the Vite build both run out of memory.
+# The free ARM shape has plenty of RAM, but E2.1.Micro has 1 GB, where the Vite
+# build and composer install both run out of memory. Size the swap to the RAM:
+# a small machine needs enough to get through a build, a large one barely needs
+# any. Override with SWAP_SIZE=8G if a build still gets killed.
+RAM_MB="$(free -m | awk '/^Mem:/ {print $2}')"
+if [ "$RAM_MB" -lt 2048 ]; then
+    SWAP_SIZE="${SWAP_SIZE:-4G}"
+else
+    SWAP_SIZE="${SWAP_SIZE:-2G}"
+fi
+
 if ! sudo swapon --show | grep -q /swapfile; then
-    sudo fallocate -l 2G /swapfile
+    echo "detected ${RAM_MB}MB RAM, creating ${SWAP_SIZE} swap"
+    sudo fallocate -l "$SWAP_SIZE" /swapfile
     sudo chmod 600 /swapfile
     sudo mkswap /swapfile
     sudo swapon /swapfile
     echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+    # Default is 60, which on a 1 GB box starts swapping long before it needs
+    # to and makes everything crawl. Only reach for swap when actually short.
+    echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf >/dev/null
+    sudo sysctl -q -w vm.swappiness=10
 fi
 
 say "Cloning the repository"
