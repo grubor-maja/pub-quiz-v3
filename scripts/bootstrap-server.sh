@@ -190,6 +190,22 @@ sudo nginx -t
 sudo systemctl enable --now nginx
 sudo systemctl reload nginx
 
+say "Preparing the environment files"
+# Created here so their permissions are right from the start. They must stay
+# world-readable: Apache inside the container runs as www-data (uid 33) while
+# the file is owned by this user, and a 600 file is simply invisible to it.
+# Laravel then silently falls back to its defaults - which means SQLite - and
+# every request 500s with a missing-database error that points nowhere near
+# the real cause. The home directory is 0700, so nothing else on the box can
+# reach these anyway.
+for pair in ".env.example:.env" "pub-quiz-api/.env.prod.example:pub-quiz-api/.env.prod"; do
+    src="$REPO_DIR/${pair%%:*}"
+    dst="$REPO_DIR/${pair##*:}"
+    [ -f "$src" ] && [ ! -f "$dst" ] && cp "$src" "$dst"
+    [ -f "$dst" ] && chmod 644 "$dst"
+done
+chmod 700 "$HOME"
+
 say "Scheduling the nightly database backup"
 chmod +x "$REPO_DIR/scripts/backup-db.sh"
 CRON_LINE="30 3 * * * $REPO_DIR/scripts/backup-db.sh >> $HOME/backup.log 2>&1"
