@@ -20,6 +20,10 @@ services:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile.prod
+    # Named explicitly so the scheduler can reuse this exact image. Without it
+    # the tag depends on the directory name, and Compose treats it as something
+    # to pull from a registry rather than something it just built.
+    image: pubquiz-backend
     container_name: pubquiz-backend
     restart: always
     ports:
@@ -43,7 +47,11 @@ services:
       - "5173:80"
 
   scheduler:
-    image: pub-quiz-v3-backend
+    # Same image as the backend, built by that service above. pull_policy stops
+    # Compose reaching for a registry on a machine where it has not been built
+    # yet, which is what breaks a first deploy on a fresh server.
+    image: pubquiz-backend
+    pull_policy: never
     container_name: pubquiz-scheduler
     restart: always
     command: >
