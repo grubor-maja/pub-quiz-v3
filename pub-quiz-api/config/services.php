@@ -6,10 +6,12 @@ return [
         'token' => env('APIFY_TOKEN'),
         'actor_id' => env('APIFY_ACTOR_ID', 'shu8hvrXbJbY3Eb9W'),
         'dataset_id' => env('APIFY_DATASET_ID'),
-        // A monthly schedule can announce 30+ quizzes, each later getting its own
-        // post with its own artwork. Fetching only the newest handful of posts
-        // means most of those quizzes never find their picture.
-        'post_limit' => (int) env('APIFY_POST_LIMIT', 60),
+        // Apify's free tier is $5/month and a run costs roughly $0.0026 per post
+        // fetched, so the daily sync across four organizations has to stay small
+        // or it burns the month's credit in a week. Twelve posts is a couple of
+        // days of their output, which is all a daily run needs to see.
+        // For a one-off backfill use: instagram:sync --limit=60
+        'post_limit' => (int) env('APIFY_POST_LIMIT', 12),
     ],
 
     'gemini' => [

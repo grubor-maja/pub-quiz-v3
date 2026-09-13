@@ -28,8 +28,10 @@ class SyncInstagramPosts implements ShouldQueue
      */
     private const SCHEDULE_MIN_QUIZZES = 5;
 
-    public function __construct(private ?string $orgSlug = null)
-    {
+    public function __construct(
+        private ?string $orgSlug = null,
+        private ?int $postLimit = null
+    ) {
     }
 
     public function handle(ApifyService $apify, QuizExtractionService $extractor): void
@@ -55,7 +57,7 @@ class SyncInstagramPosts implements ShouldQueue
     ): void {
         Log::info("Instagram sync: fetching posts for @{$org->instagram_handle}");
 
-        $posts = $apify->fetchPostsForHandle($org->instagram_handle);
+        $posts = $apify->fetchPostsForHandle($org->instagram_handle, $this->postLimit);
 
         if (empty($posts)) {
             Log::warning("Instagram sync: no posts for @{$org->instagram_handle}");
