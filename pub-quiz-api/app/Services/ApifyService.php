@@ -21,7 +21,8 @@ class ApifyService
         'shortCode' => ['shortCode', 'shortcode', 'code'],
         'url' => ['url', 'postUrl', 'link', 'permalink'],
         'caption' => ['caption', 'text', 'description', 'title'],
-        'displayUrl' => ['displayUrl', 'imageUrl', 'image', 'thumbnailUrl', 'displayUri', 'thumbnail'],
+        // apidojo nests the picture as image.url and, for reels, video.thumbnail.
+        'displayUrl' => ['displayUrl', 'image.url', 'imageUrl', 'thumbnailUrl', 'displayUri', 'video.thumbnail', 'image', 'thumbnail'],
         'ownerUsername' => ['ownerUsername', 'username', 'owner.username', 'user.username', 'ownerName'],
         'locationName' => ['locationName', 'location.name', 'location'],
         'timestamp' => ['timestamp', 'takenAt', 'takenAtTimestamp', 'createdAt', 'date', 'publishedAt'],
@@ -152,9 +153,10 @@ class ApifyService
                 continue;
             }
 
-            // location may arrive as a string or as an object; take the name.
+            // Some fields arrive as a string on one actor and an object on
+            // another - location as {name,lat,lng}, image as {url,width,height}.
             if (is_array($value)) {
-                $value = $value['name'] ?? $value['username'] ?? null;
+                $value = $value['name'] ?? $value['username'] ?? $value['url'] ?? null;
                 if ($value === null || $value === '') {
                     continue;
                 }
