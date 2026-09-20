@@ -136,7 +136,12 @@ class SyncInstagramPosts implements ShouldQueue
 
             // A post yields zero (not a quiz announcement), one, or - for schedule
             // posts listing many dates at once - several quizzes.
-            $candidates = $extractor->extract($org, $caption, $postDate, $import->image_url);
+            // Slides are kept on raw_data by the scraper, so a re-run can read
+            // them again without paying for another scrape.
+            $carousel = data_get($import->raw_data, 'carouselImages', []);
+            $carousel = is_array($carousel) ? array_values(array_filter($carousel, 'is_string')) : [];
+
+            $candidates = $extractor->extract($org, $caption, $postDate, $import->image_url, $carousel);
             $import->extracted_data = $candidates;
 
             if ($candidates === []) {
@@ -155,12 +160,20 @@ class SyncInstagramPosts implements ShouldQueue
             // does belong to both evenings. Counting any multi-date post as a
             // schedule threw that artwork away, which is why several quizzes
             // showed a blank card while their picture sat right there on Instagram.
-            $isSchedule = count($candidates) >= self::SCHEDULE_MIN_QUIZZES;
+            //
+            // A candidate read off its own slide is exempt: it has a picture
+            // that describes it alone, which is the point of reading slides.
+            $perSlide = $candidates !== [] && collect($candidates)->every(
+                fn ($c) => !empty($c['source_image'])
+            );
+            $isSchedule = !$perSlide && count($candidates) >= self::SCHEDULE_MIN_QUIZZES;
 
-            $localImageUrl = (!$isSchedule && $import->image_url)
+            $localImageUrl = (!$isSchedule && !$perSlide && $import->image_url)
                 ? $this->downloadAndStoreImage($import->image_url, $import->instagram_post_id)
                 : null;
-            $description = $isSchedule ? null : $import->caption;
+            // The caption of a weekly post describes every quiz in it, so it is
+            // no more that quiz's description than a monthly schedule's is.
+            $description = ($isSchedule || $perSlide) ? null : $import->caption;
 
             // A cancellation names the quiz being called off rather than a new
             // one. It can only act on a quiz that already exists, so if the
@@ -195,14 +208,24 @@ class SyncInstagramPosts implements ShouldQueue
             $enriched = 0;
             $firstQuizId = null;
 
-            foreach ($candidates as $candidate) {
-                $quiz = $this->createQuiz($candidate, $org, $import, $localImageUrl, $description);
+            foreach ($candidates as $index => $candidate) {
+                // Each slide-derived quiz keeps its own picture, stored under a
+                // suffixed name so the slides of one post do not overwrite
+                // each other on disk.
+                $image = !empty($candidate['source_image'])
+                    ? $this->downloadAndStoreImage(
+                        $candidate['source_image'],
+                        $import->instagram_post_id . '-' . ($index + 1)
+                    )
+                    : $localImageUrl;
+
+                $quiz = $this->createQuiz($candidate, $org, $import, $image, $description);
                 $firstQuizId ??= $quiz->id;
 
                 if ($quiz->wasRecentlyCreated) {
                     $created++;
                     Log::info("Instagram sync: created quiz '{$quiz->title}' ({$quiz->quiz_date})");
-                } elseif ($this->enrich($quiz, $candidate, $localImageUrl, $description)) {
+                } elseif ($this->enrich($quiz, $candidate, $image, $description)) {
                     $enriched++;
                     Log::info("Instagram sync: enriched quiz '{$quiz->title}' ({$quiz->quiz_date})");
                 } else {

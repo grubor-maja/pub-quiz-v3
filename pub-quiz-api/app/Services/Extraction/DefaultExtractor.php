@@ -24,6 +24,12 @@ class DefaultExtractor implements ExtractorInterface
     /** Quiz dates further out than this from the post date are treated as noise. */
     protected const MAX_DAYS_AFTER_POST = 180;
 
+    /**
+     * Slides read per post. One vision call each, so this caps what a single
+     * post can cost if an organization ever posts a fifty image carousel.
+     */
+    private const MAX_SLIDES = 15;
+
     /** Attempts per Gemini call, to ride out free-tier rate limiting. */
     private const MAX_ATTEMPTS = 3;
 
@@ -33,8 +39,16 @@ class DefaultExtractor implements ExtractorInterface
         Organization $org,
         string $caption,
         string $postDate,
-        ?string $imageUrl = null
+        ?string $imageUrl = null,
+        array $carouselImages = []
     ): array {
+        // A post whose slides each announce their own quiz cannot be read from
+        // the caption alone: Instagram caps it at 2200 characters and the later
+        // quizzes get cut off mid sentence. Those slides are read one by one.
+        if ($this->readsCarouselSlides($org) && count($carouselImages) > 1) {
+            return $this->extractFromSlides($org, $caption, $postDate, $carouselImages);
+        }
+
         $candidates = $this->runGemini($org, $caption, $postDate, $imageUrl);
 
         // Gemini unavailable or errored - fall back to the regex reader, which
@@ -69,6 +83,18 @@ class DefaultExtractor implements ExtractorInterface
     }
 
     /**
+     * Whether each slide of a carousel post announces its own quiz.
+     *
+     * Off by default: for most organizations the extra slides are photos of the
+     * same evening, and reading each one would invent quizzes that do not exist
+     * while spending a vision call per picture.
+     */
+    protected function readsCarouselSlides(Organization $org): bool
+    {
+        return false;
+    }
+
+    /**
      * Organization-specific fixups applied to raw candidates.
      *
      * @param  array<int, array<string, mixed>>  $candidates
@@ -81,6 +107,88 @@ class DefaultExtractor implements ExtractorInterface
         string $postDate
     ): array {
         return $candidates;
+    }
+
+    /**
+     * Reads one quiz per slide, using the caption only as shared context for
+     * the things it states once for the whole post, such as the entry fee and
+     * team size.
+     *
+     * @param  array<int, string>  $slides
+     * @return array<int, array<string, mixed>>
+     */
+    private function extractFromSlides(
+        Organization $org,
+        string $caption,
+        string $postDate,
+        array $slides
+    ): array {
+        $collected = [];
+        $reached = false;
+
+        foreach (array_slice($slides, 0, self::MAX_SLIDES) as $i => $slide) {
+            $raw = $this->callGemini($this->buildSlidePrompt($org, $caption, $postDate), $slide);
+
+            if ($raw === null) {
+                continue;
+            }
+            $reached = true;
+
+            foreach ($this->normalize($raw) as $candidate) {
+                // Remember which slide this came from so the quiz can be shown
+                // with its own artwork instead of the post's cover image.
+                $candidate['source_image'] = $slide;
+                $collected[] = $candidate;
+            }
+        }
+
+        // Every call failed, so "no quizzes here" is unverified.
+        if (!$reached && $this->geminiConfigured()) {
+            throw new ExtractionUnavailableException(
+                "Extraction unavailable for {$org->slug}: no slide could be read"
+            );
+        }
+
+        Log::info('Extraction: read carousel slides', [
+            'org' => $org->slug,
+            'slides' => count($slides),
+            'found' => count($collected),
+        ]);
+
+        $collected = $this->postProcess($collected, $org, $caption, $postDate);
+        $collected = $this->applyDefaults($collected, $org);
+
+        return $this->validate($collected, $org, $postDate);
+    }
+
+    private function buildSlidePrompt(Organization $org, string $caption, string $postDate): string
+    {
+        $extra = trim($this->promptRules($org));
+        $extraBlock = $extra === '' ? '' : "\n\nPRAVILA ZA OVU ORGANIZACIJU:\n{$extra}";
+
+        return <<<PROMPT
+Na slici je najava JEDNOG pub kviza. Procitaj podatke sa slike.
+Vrati SAMO validan JSON: {"is_quiz_post": true|false, "quizzes": [ {...} ]}
+
+Ako slika nema naziv kviza i datum (npr. naslovna slika sa natpisom
+"NEDELJNI PLAN", fotografija pobednika, zanimljivost), vrati
+"is_quiz_post": false i prazan niz.
+
+Sa slike procitaj:
+- title: naziv kviza (krupan tekst, npr. "Fudbalski kviz")
+- quiz_date: YYYY-MM-DD. Na slici je obicno "21.09." bez godine -
+  zakljuci godinu iz datuma objave: {$postDate}
+- quiz_time: HH:MM (npr. "Od 19:30h" -> "19:30")
+- location: naziv lokala (npr. "Pool and Beer")
+- address: ulica i broj (npr. "Narodnih heroja 30")
+
+Tekst objave je dat samo kao dopuna, za podatke koji vaze za sve kvizove
+(kotizacija, broj clanova ekipe, telefon). NE uzimaj datum ni naziv iz
+teksta ako se ne poklapaju sa slikom - slika je merodavna.{$extraBlock}
+
+Tekst objave:
+{$caption}
+PROMPT;
     }
 
     // ------------------------------------------------------------- pipeline
@@ -345,6 +453,7 @@ PROMPT;
                 'max_team_members' => null,
                 'contact_phone' => null,
                 'is_cancelled' => false,
+                'source_image' => null,
             ], array_filter($c, fn ($v) => $v !== null && $v !== ''));
 
             // Organization fallbacks only. Anything the organizer never stated

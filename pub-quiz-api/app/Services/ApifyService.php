@@ -28,6 +28,9 @@ class ApifyService
         'timestamp' => ['timestamp', 'takenAt', 'takenAtTimestamp', 'createdAt', 'date', 'publishedAt'],
     ];
 
+    /** Where each actor hides the slides of a carousel post. */
+    private const CAROUSEL_KEYS = ['childPosts', 'carouselMedia', 'sidecarMedia', 'images'];
+
     private string $token;
     private string $actorId;
 
@@ -134,10 +137,50 @@ class ApifyService
                 ? "https://www.instagram.com/p/{$post['shortCode']}/"
                 : null;
 
+            $post['carouselImages'] = $this->carouselImages($item);
+
             $posts[] = $post;
         }
 
         return $posts;
+    }
+
+    /**
+     * Slide images of a carousel post, in the order they appear.
+     *
+     * Organizers have started putting a week of quizzes in one post, one per
+     * slide. Instagram caps a caption at 2200 characters, which is not enough
+     * room to describe them all, so the later quizzes exist only as pictures.
+     * Keeping the slides is what makes those recoverable.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<int, string>
+     */
+    private function carouselImages(array $item): array
+    {
+        foreach (self::CAROUSEL_KEYS as $key) {
+            $slides = $item[$key] ?? null;
+            if (!is_array($slides) || $slides === []) {
+                continue;
+            }
+
+            $urls = [];
+            foreach ($slides as $slide) {
+                $url = is_string($slide)
+                    ? $slide
+                    : $this->firstPresent((array) $slide, ['displayUrl', 'url', 'image.url', 'imageUrl']);
+
+                if (is_string($url) && str_starts_with($url, 'http')) {
+                    $urls[] = $url;
+                }
+            }
+
+            if ($urls !== []) {
+                return array_values(array_unique($urls));
+            }
+        }
+
+        return [];
     }
 
     /**

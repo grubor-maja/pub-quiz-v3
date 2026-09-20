@@ -15,13 +15,16 @@ interface ExtractorInterface
      * Each candidate is an array with the keys:
      *   title, quiz_date (Y-m-d), quiz_time (H:i|null), location, address,
      *   entry_fee, min_team_members, max_team_members, contact_phone
+     * and optionally source_image, the slide a candidate was read from.
      *
+     * @param  array<int, string>  $carouselImages  slides of a multi image post
      * @return array<int, array<string, mixed>>
      */
     public function extract(
         Organization $org,
         string $caption,
         string $postDate,
-        ?string $imageUrl = null
+        ?string $imageUrl = null,
+        array $carouselImages = []
     ): array;
 }

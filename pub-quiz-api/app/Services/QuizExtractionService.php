@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Services\Extraction\DefaultExtractor;
 use App\Services\Extraction\ExtractorInterface;
 use App\Services\Extraction\Orgs\IHateQuizExtractor;
+use App\Services\Extraction\Orgs\PabKviz8x8Extractor;
 
 /**
  * Entry point for turning an Instagram post into quiz candidates.
@@ -21,6 +22,7 @@ class QuizExtractionService
     /** @var array<string, class-string<ExtractorInterface>> slug => extractor */
     private const EXTRACTORS = [
         'i-hate-quiz' => IHateQuizExtractor::class,
+        'pab-kviz-8x8' => PabKviz8x8Extractor::class,
     ];
 
     public function extractorFor(Organization $org): ExtractorInterface
@@ -37,8 +39,10 @@ class QuizExtractionService
         Organization $org,
         string $caption,
         string $postDate,
-        ?string $imageUrl = null
+        ?string $imageUrl = null,
+        array $carouselImages = []
     ): array {
-        return $this->extractorFor($org)->extract($org, $caption, $postDate, $imageUrl);
+        return $this->extractorFor($org)
+            ->extract($org, $caption, $postDate, $imageUrl, $carouselImages);
     }
 }
