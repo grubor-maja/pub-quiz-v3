@@ -6,6 +6,7 @@ import QuizCard from '../components/QuizCard'
 import SubscribeButton from '../components/SubscribeButton'
 import type { Quiz } from '../types'
 import { kvizWord } from '../lib/utils'
+import { useSeo } from '../lib/useSeo'
 
 export default function OrganizationDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -14,6 +15,17 @@ export default function OrganizationDetailPage() {
     queryKey: ['organization', slug],
     queryFn: () => fetchOrganization(slug!),
     enabled: !!slug,
+  })
+
+  // Must sit above the early returns below, which is why it reads from data
+  // rather than from the org constant further down.
+  useSeo({
+    title: data?.organization?.name ?? '',
+    description: data?.organization?.description
+      ?? `Pab kvizovi u organizaciji ${data?.organization?.name}. Termini, lokacije, kotizacija i prijava.`,
+    path: `/organizacije/${slug}`,
+    image: data?.organization?.logo_url ?? undefined,
+    enabled: !!data?.organization,
   })
 
   if (isLoading) {

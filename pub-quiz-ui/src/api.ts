@@ -145,6 +145,31 @@ export const adminDeleteQuiz = async (id: string): Promise<{ message: string }> 
   return data
 }
 
+export interface OrgPreview {
+  draft: Partial<AdminOrganization>
+  captions: string[]
+  warnings: string[]
+}
+
+export interface TestSyncResult {
+  total_quizzes: number
+  posts: {
+    posted_at: string
+    caption: string
+    quizzes: { title: string | null; quiz_date: string | null; quiz_time: string | null; location: string | null; entry_fee: number | null }[]
+  }[]
+}
+
+export const adminPreviewOrganization = async (handle: string): Promise<OrgPreview> => {
+  const { data } = await api.post('/admin/organizations/preview', { instagram_handle: handle })
+  return data
+}
+
+export const adminTestSync = async (payload: Record<string, unknown>): Promise<TestSyncResult> => {
+  const { data } = await api.post('/admin/organizations/test-sync', payload)
+  return data
+}
+
 export const adminFetchOrganizations = async (): Promise<AdminOrganization[]> => {
   const { data } = await api.get('/admin/organizations')
   return data

@@ -12,6 +12,14 @@ interface SeoOptions {
   image?: string
   /** JSON-LD object. Replaced on every route change, never accumulated. */
   jsonLd?: Record<string, unknown>
+  /**
+   * False while the page's data is still loading. The server already wrote the
+   * real title and description into the document; overwriting them with the
+   * placeholders this hook would otherwise receive - "Kviz", "Detalji pab
+   * kviza." - would undo that for as long as the request takes, and that is
+   * exactly the window a crawler's renderer may sample.
+   */
+  enabled?: boolean
 }
 
 function setMeta(selector: string, attr: string, value: string) {
@@ -31,8 +39,10 @@ function setMeta(selector: string, attr: string, value: string) {
  * this every page looks identical to a crawler and they compete with each other
  * instead of ranking for their own terms.
  */
-export function useSeo({ title, description, path, image, jsonLd }: SeoOptions) {
+export function useSeo({ title, description, path, image, jsonLd, enabled = true }: SeoOptions) {
   useEffect(() => {
+    if (!enabled) return
+
     const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
     const url = BASE_URL + (path ?? window.location.pathname)
     const img = image ?? `${BASE_URL}/images/logo1.png`
@@ -75,7 +85,7 @@ export function useSeo({ title, description, path, image, jsonLd }: SeoOptions) 
     return () => {
       document.getElementById(SCRIPT_ID)?.remove()
     }
-  }, [title, description, path, image, jsonLd])
+  }, [title, description, path, image, jsonLd, enabled])
 }
 
 export { SITE_NAME, BASE_URL }

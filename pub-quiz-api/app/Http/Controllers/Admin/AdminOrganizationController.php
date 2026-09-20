@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Services\Extraction\OrganizationProfiler;
+use App\Services\QuizExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -30,6 +32,98 @@ class AdminOrganizationController extends Controller
             ]);
 
         return response()->json($orgs);
+    }
+
+    /**
+     * Proposes an organization from an Instagram handle. Writes nothing: the
+     * default_* values it guesses apply to every quiz scraped afterwards, so a
+     * wrong one corrupts the future quietly. A human confirms first.
+     */
+    public function preview(Request $request, OrganizationProfiler $profiler): JsonResponse
+    {
+        $data = $request->validate([
+            'instagram_handle' => ['required', 'string', 'max:255', 'regex:/^@?[A-Za-z0-9._]+$/'],
+        ]);
+
+        try {
+            return response()->json($profiler->profile($data['instagram_handle']));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Runs the real extraction against a handle and returns what it would
+     * create, without saving. Lets a new organization be checked before it is
+     * trusted with the daily sync, which is where a bad configuration would
+     * otherwise surface as quizzes quietly not appearing.
+     */
+    public function testSync(Request $request, QuizExtractionService $extractor): JsonResponse
+    {
+        $data = $request->validate([
+            'instagram_handle' => ['required', 'string', 'max:255', 'regex:/^@?[A-Za-z0-9._]+$/'],
+            'slug' => ['nullable', 'string', 'max:255'],
+            'default_location' => ['nullable', 'string', 'max:255'],
+            'default_address' => ['nullable', 'string', 'max:255'],
+            'default_quiz_time' => ['nullable', 'date_format:H:i'],
+            'default_entry_fee' => ['nullable', 'integer'],
+            'default_contact_phone' => ['nullable', 'string', 'max:255'],
+            'default_min_team_members' => ['nullable', 'integer'],
+            'default_max_team_members' => ['nullable', 'integer'],
+        ]);
+
+        $handle = ltrim($data['instagram_handle'], '@');
+
+        // An unsaved model, so the defaults being tried out do not touch the
+        // database and the per-organization extractor is still selected by slug.
+        $org = new Organization($data);
+        $org->slug = $data['slug'] ?? 'preview';
+        $org->name = $handle;
+        $org->instagram_handle = $handle;
+
+        $posts = app(\App\Services\ApifyService::class)->fetchPostsForHandle($handle, 4);
+
+        if ($posts === []) {
+            return response()->json([
+                'message' => "Nijedna objava nije povucena za @{$handle}.",
+            ], 422);
+        }
+
+        $results = [];
+        foreach ($posts as $post) {
+            $postDate = isset($post['timestamp'])
+                ? date('Y-m-d', strtotime((string) $post['timestamp']))
+                : now()->format('Y-m-d');
+
+            try {
+                $candidates = $extractor->extract(
+                    $org,
+                    (string) ($post['caption'] ?? ''),
+                    $postDate,
+                    $post['displayUrl'] ?? null,
+                    $post['carouselImages'] ?? []
+                );
+            } catch (\Throwable $e) {
+                $candidates = [];
+            }
+
+            $results[] = [
+                'posted_at' => $postDate,
+                'caption' => mb_substr(preg_replace('/\s+/', ' ', (string) ($post['caption'] ?? '')), 0, 140),
+                'quizzes' => array_map(fn ($c) => [
+                    'title' => $c['title'] ?? null,
+                    'quiz_date' => $c['quiz_date'] ?? null,
+                    'quiz_time' => $c['quiz_time'] ?? null,
+                    'location' => $c['location'] ?? null,
+                    'entry_fee' => $c['entry_fee'] ?? null,
+                ], $candidates),
+            ];
+        }
+
+        return response()->json([
+            'posts' => $results,
+            'total_quizzes' => array_sum(array_map(fn ($r) => count($r['quizzes']), $results)),
+        ]);
     }
 
     public function store(Request $request): JsonResponse

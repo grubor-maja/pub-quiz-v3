@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, Pencil, X, Building2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, X, Building2, Download, FlaskConical } from 'lucide-react'
 import {
   adminCreateOrganization,
   adminDeleteOrganization,
   adminFetchOrganizations,
+  adminPreviewOrganization,
+  adminTestSync,
   adminUpdateOrganization,
+  type TestSyncResult,
 } from '../../api'
 import type { AdminOrganization } from '../../types'
 import Field, { inputStyle } from '../../components/admin/Field'
@@ -35,6 +38,7 @@ export default function AdminOrganizationsPage() {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState<string | null>(null)
+  const [test, setTest] = useState<TestSyncResult | null>(null)
 
   useSeo({ title: 'Administracija organizacija', description: 'Interna stranica.', path: '/admin/organizacije' })
 
@@ -71,6 +75,35 @@ export default function AdminOrganizationsPage() {
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteOrganization(id),
     onSuccess: () => done('Organizacija obrisana.'),
+    onError,
+  })
+
+  // Fills the form from the account rather than writing anything, because the
+  // default_* values it guesses apply to every quiz scraped afterwards.
+  const preview = useMutation({
+    mutationFn: (handle: string) => adminPreviewOrganization(handle),
+    onSuccess: (r) => {
+      setDraft(d => ({ ...(d ?? {}), ...r.draft }))
+      setNotice(r.warnings.length
+        ? r.warnings.join(' ')
+        : 'Predlog učitan. Proveri vrednosti pre čuvanja.')
+    },
+    onError,
+  })
+
+  const runTest = useMutation({
+    mutationFn: (d: Draft) => adminTestSync({
+      instagram_handle: d.instagram_handle,
+      slug: d.slug || undefined,
+      default_location: d.default_location || undefined,
+      default_address: d.default_address || undefined,
+      default_quiz_time: d.default_quiz_time ? String(d.default_quiz_time).slice(0, 5) : undefined,
+      default_entry_fee: d.default_entry_fee ?? undefined,
+      default_contact_phone: d.default_contact_phone || undefined,
+      default_min_team_members: d.default_min_team_members ?? undefined,
+      default_max_team_members: d.default_max_team_members ?? undefined,
+    }),
+    onSuccess: (r) => setTest(r),
     onError,
   })
 
@@ -132,7 +165,7 @@ export default function AdminOrganizationsPage() {
       )}
 
       {draft && (
-        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setDraft(null) }}>
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setDraft(null); setTest(null) } }}>
           <div style={modalStyle}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
@@ -148,8 +181,28 @@ export default function AdminOrganizationsPage() {
               <Field label="Slug" hint="Ostavi prazno da se izvede iz naziva" error={errors.slug}>
                 <input style={inputStyle} value={draft.slug ?? ''} onChange={e => set('slug', e.target.value)} placeholder="npr. pab-kviz-8x8" />
               </Field>
-              <Field label="Instagram handle" hint="Bez @" error={errors.instagram_handle}>
-                <input style={inputStyle} value={draft.instagram_handle ?? ''} onChange={e => set('instagram_handle', e.target.value)} />
+              <Field
+                label="Instagram handle"
+                hint="Bez @. Dugme popunjava ostala polja iz naloga."
+                error={errors.instagram_handle}
+              >
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    style={inputStyle}
+                    value={draft.instagram_handle ?? ''}
+                    onChange={e => set('instagram_handle', e.target.value)}
+                    placeholder="pabkviz8x8"
+                  />
+                  <button
+                    onClick={() => draft.instagram_handle && preview.mutate(draft.instagram_handle)}
+                    disabled={!draft.instagram_handle || preview.isPending}
+                    style={{ ...btnGhostWide, whiteSpace: 'nowrap', opacity: preview.isPending ? 0.6 : 1 }}
+                    title="Učitaj podatke sa Instagrama"
+                  >
+                    <Download size={13} />
+                    {preview.isPending ? '...' : 'Učitaj'}
+                  </button>
+                </div>
               </Field>
               <Field label="Logo URL" error={errors.logo_url}>
                 <input style={inputStyle} value={draft.logo_url ?? ''} onChange={e => set('logo_url', e.target.value)} placeholder="/images/logo-x.jpg" />
@@ -187,7 +240,40 @@ export default function AdminOrganizationsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 18, justifyContent: 'flex-end' }}>
+            {test && (
+              <div style={testBoxStyle}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-primary)' }}>
+                  Probni sync: {test.total_quizzes} kviz(ova) iz {test.posts.length} objava
+                </div>
+                {test.posts.map((p, i) => (
+                  <div key={i} style={{ marginBottom: 8 }}>
+                    <div style={{ color: 'var(--text-muted)' }}>{p.posted_at} · {p.caption}</div>
+                    {p.quizzes.length === 0
+                      ? <div style={{ color: 'var(--text-muted)', paddingLeft: 10 }}>preskočeno</div>
+                      : p.quizzes.map((q, j) => (
+                        <div key={j} style={{ paddingLeft: 10, color: 'var(--accent-amber)' }}>
+                          {q.quiz_date ?? '?'} {q.quiz_time ?? ''} · {q.title ?? 'bez naziva'}
+                          {q.location ? ` · ${q.location}` : ''}
+                        </div>
+                      ))}
+                  </div>
+                ))}
+                <div style={{ color: 'var(--text-muted)', marginTop: 6 }}>
+                  Ništa nije sačuvano. Ovo je samo prikaz šta bi sync napravio.
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 18, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => { setTest(null); runTest.mutate(draft) }}
+                disabled={!draft.instagram_handle || runTest.isPending}
+                style={{ ...btnGhostWide, marginRight: 'auto', opacity: runTest.isPending ? 0.6 : 1 }}
+                title="Pokaži šta bi sync izvukao, bez upisa"
+              >
+                <FlaskConical size={13} />
+                {runTest.isPending ? 'Testiram...' : 'Probaj sync'}
+              </button>
               <button onClick={() => setDraft(null)} style={btnGhostWide}>Odustani</button>
               <button
                 onClick={() => save.mutate(draft)}
@@ -237,6 +323,11 @@ const overlayStyle: React.CSSProperties = {
 const modalStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)', border: '0.5px solid var(--border-strong)',
   borderRadius: 14, padding: 20, width: '100%', maxWidth: 620,
+}
+const testBoxStyle: React.CSSProperties = {
+  marginTop: 16, padding: 12, borderRadius: 10, fontSize: 11.5, lineHeight: 1.55,
+  background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--border-subtle)',
+  maxHeight: 260, overflowY: 'auto', color: 'var(--text-secondary)',
 }
 const gridStyle: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12,

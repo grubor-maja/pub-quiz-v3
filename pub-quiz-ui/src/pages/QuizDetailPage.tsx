@@ -87,6 +87,12 @@ export default function QuizDetailPage() {
     path: `/kvizovi/${slug}`,
     image: quiz?.cover_image_url ?? undefined,
     jsonLd,
+    // Held back until the quiz arrives, so the metadata the server wrote for
+    // this URL is not replaced by the fallbacks above while the request is in
+    // flight. On an in-app navigation there is nothing to preserve, but the
+    // stale title belongs to the previous page for the same fraction of a
+    // second either way.
+    enabled: !!quiz,
   })
 
   if (isLoading) {

@@ -55,6 +55,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('/quizzes/{id}', [Admin\AdminQuizController::class, 'destroy']);
 
     Route::get('/organizations', [Admin\AdminOrganizationController::class, 'index']);
+    Route::post('/organizations/preview', [Admin\AdminOrganizationController::class, 'preview']);
+    Route::post('/organizations/test-sync', [Admin\AdminOrganizationController::class, 'testSync']);
     Route::post('/organizations', [Admin\AdminOrganizationController::class, 'store']);
     Route::put('/organizations/{id}', [Admin\AdminOrganizationController::class, 'update']);
     Route::delete('/organizations/{id}', [Admin\AdminOrganizationController::class, 'destroy']);
