@@ -44,15 +44,19 @@ class OrganizationProfiler
             $posts
         )));
 
+        $remoteLogo = $this->firstNonEmpty($posts, ['ownerProfilePicUrl', 'profilePicUrl', 'owner.profilePicUrl']);
+
         $draft = [
             'name' => $this->displayName($posts, $handle),
             'instagram_handle' => $handle,
-            'logo_url' => $this->firstNonEmpty($posts, ['ownerProfilePicUrl', 'profilePicUrl', 'owner.profilePicUrl']),
+            'logo_url' => $remoteLogo ? $this->storeLogo($remoteLogo, $handle) : null,
         ];
 
         $warnings = [];
         if (!$draft['logo_url']) {
-            $warnings[] = 'Profilna slika nije dostupna kroz scraper, dodaj logo rucno.';
+            $warnings[] = $remoteLogo
+                ? 'Profilna slika nije mogla da se preuzme, dodaj logo rucno.'
+                : 'Profilna slika nije dostupna kroz scraper, dodaj logo rucno.';
         }
 
         $inferred = $captions === [] ? [] : $this->inferDefaults($captions, $handle);
@@ -67,6 +71,40 @@ class OrganizationProfiler
             'captions' => array_map(fn ($c) => mb_substr($c, 0, 300), array_slice($captions, 0, 3)),
             'warnings' => $warnings,
         ];
+    }
+
+    /**
+     * Copies the profile picture onto our own storage.
+     *
+     * Instagram's CDN URLs are signed and expire within days, so storing one
+     * directly gives a logo that works today and is broken by the end of the
+     * week. They also run past 500 characters, which the column cannot hold.
+     */
+    private function storeLogo(string $url, string $handle): ?string
+    {
+        try {
+            $response = Http::timeout(20)->get($url);
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $contentType = $response->header('Content-Type') ?? '';
+            $extension = match (true) {
+                str_contains($contentType, 'png') => 'png',
+                str_contains($contentType, 'webp') => 'webp',
+                default => 'jpg',
+            };
+
+            $path = 'org-logos/' . preg_replace('/[^A-Za-z0-9._-]/', '', $handle) . '.' . $extension;
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, $response->body());
+
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        } catch (\Throwable $e) {
+            Log::warning('Could not store organization logo', ['handle' => $handle, 'error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**
