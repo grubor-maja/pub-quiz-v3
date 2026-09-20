@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth;
 use App\Http\Controllers\FavoritesController;
 use App\Http\Controllers\InstagramSyncController;
@@ -41,4 +42,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
     Route::post('/organizations/{slug}/subscribe', [SubscriptionController::class, 'store']);
     Route::delete('/organizations/{slug}/subscribe', [SubscriptionController::class, 'destroy']);
+});
+
+// Admin. Both middlewares matter: auth:sanctum establishes who is calling,
+// admin decides whether they may. Hiding these in the frontend would not, since
+// the routes are visible to anyone who reads the JavaScript bundle.
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/quizzes', [Admin\AdminQuizController::class, 'index']);
+    Route::post('/quizzes', [Admin\AdminQuizController::class, 'store']);
+    Route::get('/quizzes/{id}', [Admin\AdminQuizController::class, 'show']);
+    Route::put('/quizzes/{id}', [Admin\AdminQuizController::class, 'update']);
+    Route::delete('/quizzes/{id}', [Admin\AdminQuizController::class, 'destroy']);
+
+    Route::get('/organizations', [Admin\AdminOrganizationController::class, 'index']);
+    Route::post('/organizations', [Admin\AdminOrganizationController::class, 'store']);
+    Route::put('/organizations/{id}', [Admin\AdminOrganizationController::class, 'update']);
+    Route::delete('/organizations/{id}', [Admin\AdminOrganizationController::class, 'destroy']);
 });

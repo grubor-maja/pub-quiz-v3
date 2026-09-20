@@ -15,6 +15,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    // is_admin is intentionally absent: mass assignment is how a registration
+    // payload would be able to grant itself the flag.
     protected $fillable = [
         'name',
         'email',
@@ -31,7 +33,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
     }
 
     public function favorites(): BelongsToMany

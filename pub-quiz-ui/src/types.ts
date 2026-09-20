@@ -58,7 +58,28 @@ export interface User {
   id: number
   name: string
   email: string
+  /** Granted only by the user:make-admin command on the server. */
+  is_admin?: boolean
   created_at: string
+}
+
+/** Organization as the admin API returns it, with the extraction defaults. */
+export interface AdminOrganization extends Organization {
+  quizzes_count?: number
+  default_location: string | null
+  default_address: string | null
+  default_quiz_time: string | null
+  default_entry_fee: number | null
+  default_contact_phone: string | null
+  default_min_team_members: number | null
+  default_max_team_members: number | null
+}
+
+export interface AdminQuizFilters {
+  search?: string
+  org?: string
+  status?: string
+  page?: number
 }
 
 export interface AuthResponse {

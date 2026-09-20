@@ -13,6 +13,9 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProfilePage from './pages/ProfilePage'
 import MapPage from './pages/MapPage'
+import RequireAdmin from './components/RequireAdmin'
+import AdminQuizzesPage from './pages/admin/AdminQuizzesPage'
+import AdminOrganizationsPage from './pages/admin/AdminOrganizationsPage'
 import { useMediaQuery } from './lib/useMediaQuery'
 
 function AppShell() {
@@ -98,6 +101,14 @@ function AppShell() {
                 <ProfilePage />
               </RequireAuth>
             }
+          />
+          <Route
+            path="/admin/kvizovi"
+            element={<RequireAdmin><AdminQuizzesPage /></RequireAdmin>}
+          />
+          <Route
+            path="/admin/organizacije"
+            element={<RequireAdmin><AdminOrganizationsPage /></RequireAdmin>}
           />
         </Routes>
       </main>

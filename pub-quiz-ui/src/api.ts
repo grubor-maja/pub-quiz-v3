@@ -1,5 +1,7 @@
 import axios from 'axios'
 import type {
+  AdminOrganization,
+  AdminQuizFilters,
   AuthResponse,
   LoginPayload,
   Organization,
@@ -113,6 +115,53 @@ export const subscribeOrg = async (slug: string): Promise<{ message: string }> =
 
 export const unsubscribeOrg = async (slug: string): Promise<{ message: string }> => {
   const { data } = await api.delete(`/organizations/${slug}/subscribe`)
+  return data
+}
+
+// ---- Admin ----
+// Every one of these is rejected server side unless the caller is an admin,
+// so a hidden button is a convenience rather than the protection.
+
+export const adminFetchQuizzes = async (filters: AdminQuizFilters = {}): Promise<PaginatedResponse<Quiz>> => {
+  const params = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
+  )
+  const { data } = await api.get('/admin/quizzes', { params })
+  return data
+}
+
+export const adminCreateQuiz = async (payload: Partial<Quiz>): Promise<Quiz> => {
+  const { data } = await api.post('/admin/quizzes', payload)
+  return data
+}
+
+export const adminUpdateQuiz = async (id: string, payload: Partial<Quiz>): Promise<Quiz> => {
+  const { data } = await api.put(`/admin/quizzes/${id}`, payload)
+  return data
+}
+
+export const adminDeleteQuiz = async (id: string): Promise<{ message: string }> => {
+  const { data } = await api.delete(`/admin/quizzes/${id}`)
+  return data
+}
+
+export const adminFetchOrganizations = async (): Promise<AdminOrganization[]> => {
+  const { data } = await api.get('/admin/organizations')
+  return data
+}
+
+export const adminCreateOrganization = async (payload: Partial<AdminOrganization>): Promise<AdminOrganization> => {
+  const { data } = await api.post('/admin/organizations', payload)
+  return data
+}
+
+export const adminUpdateOrganization = async (id: string, payload: Partial<AdminOrganization>): Promise<AdminOrganization> => {
+  const { data } = await api.put(`/admin/organizations/${id}`, payload)
+  return data
+}
+
+export const adminDeleteOrganization = async (id: string): Promise<{ message: string }> => {
+  const { data } = await api.delete(`/admin/organizations/${id}`)
   return data
 }
 

@@ -5,6 +5,8 @@ import {
   MapPinned,
   User as UserIcon,
   LogOut,
+  ShieldCheck,
+  CalendarCog,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -110,6 +112,23 @@ export default function Sidebar({ isMobile = false, open = false, onClose }: Sid
 
       {user && (
         <NavItem to="/profil" icon={UserIcon} label="Moj profil" active={pathname.startsWith('/profil')} />
+      )}
+
+      {user?.is_admin && (
+        <>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--text-muted)',
+            padding: '18px 8px 8px',
+          }}>
+            Administracija
+          </div>
+          <NavItem to="/admin/kvizovi" icon={CalendarCog} label="Kvizovi" active={pathname.startsWith('/admin/kvizovi')} />
+          <NavItem to="/admin/organizacije" icon={ShieldCheck} label="Organizacije" active={pathname.startsWith('/admin/organizacije')} />
+        </>
       )}
 
       {/* User footer */}
