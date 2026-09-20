@@ -34,6 +34,9 @@ class ApifyService
     private string $token;
     private string $actorId;
 
+    /** Set when the last fetch hit an age gated account, so callers can say so. */
+    private ?string $lastRestriction = null;
+
     public function __construct()
     {
         $this->token = (string) config('services.apify.token');
@@ -65,8 +68,11 @@ class ApifyService
         }
 
         $items = $response->json() ?? [];
+        $items = is_array($items) ? $items : [];
 
-        return $this->normalize(is_array($items) ? $items : []);
+        $this->lastRestriction = $this->restrictionReason($items, $instagramHandle);
+
+        return $this->normalize($items);
     }
 
     /**
@@ -156,6 +162,42 @@ class ApifyService
         }
 
         return $posts;
+    }
+
+    /**
+     * Instagram hides the posts of an age restricted account from anyone not
+     * logged in, while still serving its profile. No actor or input can get
+     * past that, so it is worth naming rather than reporting as an empty result.
+     *
+     * @param  array<int, mixed>  $items
+     */
+    private function restrictionReason(array $items, string $handle): ?string
+    {
+        foreach ($items as $item) {
+            if (!is_array($item) || empty($item['isRestrictedProfile'])) {
+                continue;
+            }
+
+            $reason = (string) ($item['restrictionReason'] ?? 'restricted');
+
+            Log::warning('Instagram account is restricted, posts are not reachable', [
+                'handle' => $handle,
+                'reason' => $reason,
+            ]);
+
+            return $reason;
+        }
+
+        return null;
+    }
+
+    /**
+     * Why the last fetch came back empty, when the reason was an age gate
+     * rather than an account with nothing to show. Null otherwise.
+     */
+    public function lastRestriction(): ?string
+    {
+        return $this->lastRestriction;
     }
 
     /**

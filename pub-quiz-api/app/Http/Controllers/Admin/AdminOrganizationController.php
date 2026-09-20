@@ -81,7 +81,16 @@ class AdminOrganizationController extends Controller
         $org->name = $handle;
         $org->instagram_handle = $handle;
 
-        $posts = app(\App\Services\ApifyService::class)->fetchPostsForHandle($handle, 4);
+        $apify = app(\App\Services\ApifyService::class);
+        $posts = $apify->fetchPostsForHandle($handle, 4);
+
+        if ($posts === [] && $apify->lastRestriction() !== null) {
+            return response()->json([
+                'message' => "Nalog @{$handle} je na Instagramu oznacen kao 18+, pa se njegove objave "
+                    . 'ne vide bez prijave. Scraper ih ne moze dobaviti. '
+                    . 'Zamoli organizatora da skine to ogranicenje, a do tada kvizove unesi rucno.',
+            ], 422);
+        }
 
         if ($posts === []) {
             return response()->json([

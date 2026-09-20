@@ -39,6 +39,9 @@ export default function AdminOrganizationsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState<string | null>(null)
   const [test, setTest] = useState<TestSyncResult | null>(null)
+  // Separate from `notice`, which renders behind the modal and so is invisible
+  // exactly when an action inside the modal fails.
+  const [modalMsg, setModalMsg] = useState<string | null>(null)
 
   useSeo({ title: 'Administracija organizacija', description: 'Interna stranica.', path: '/admin/organizacije' })
 
@@ -52,6 +55,7 @@ export default function AdminOrganizationsPage() {
     qc.invalidateQueries({ queryKey: ['organizations'] })
     setDraft(null)
     setErrors({})
+    setModalMsg(null)
     setNotice(msg)
   }
 
@@ -59,8 +63,11 @@ export default function AdminOrganizationsPage() {
     const data = e?.response?.data
     if (data?.errors) {
       setErrors(Object.fromEntries(Object.entries(data.errors).map(([k, v]: any) => [k, v[0]])))
+      setModalMsg('Neka polja nisu ispravna, pogledaj poruke ispod njih.')
     } else {
-      setNotice(data?.message ?? 'Greška pri čuvanju.')
+      const msg = data?.message ?? 'Greška pri čuvanju.'
+      setModalMsg(msg)
+      setNotice(msg)
     }
   }
 
@@ -84,7 +91,7 @@ export default function AdminOrganizationsPage() {
     mutationFn: (handle: string) => adminPreviewOrganization(handle),
     onSuccess: (r) => {
       setDraft(d => ({ ...(d ?? {}), ...r.draft }))
-      setNotice(r.warnings.length
+      setModalMsg(r.warnings.length
         ? r.warnings.join(' ')
         : 'Predlog učitan. Proveri vrednosti pre čuvanja.')
     },
@@ -103,7 +110,7 @@ export default function AdminOrganizationsPage() {
       default_min_team_members: d.default_min_team_members ?? undefined,
       default_max_team_members: d.default_max_team_members ?? undefined,
     }),
-    onSuccess: (r) => setTest(r),
+    onSuccess: (r) => { setTest(r); setModalMsg(null) },
     onError,
   })
 
@@ -165,7 +172,7 @@ export default function AdminOrganizationsPage() {
       )}
 
       {draft && (
-        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setDraft(null); setTest(null) } }}>
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) { setDraft(null); setTest(null); setModalMsg(null) } }}>
           <div style={modalStyle}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
@@ -173,6 +180,10 @@ export default function AdminOrganizationsPage() {
               </h2>
               <button onClick={() => setDraft(null)} style={btnGhost}><X size={16} /></button>
             </div>
+
+            {modalMsg && (
+              <div style={modalMsgStyle} onClick={() => setModalMsg(null)}>{modalMsg}</div>
+            )}
 
             <div style={gridStyle}>
               <Field label="Naziv" error={errors.name}>
@@ -323,6 +334,11 @@ const overlayStyle: React.CSSProperties = {
 const modalStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)', border: '0.5px solid var(--border-strong)',
   borderRadius: 14, padding: 20, width: '100%', maxWidth: 620,
+}
+const modalMsgStyle: React.CSSProperties = {
+  padding: '9px 12px', borderRadius: 8, marginBottom: 14, cursor: 'pointer',
+  background: 'var(--accent-amber-soft)', color: 'var(--accent-amber)',
+  border: '0.5px solid rgba(233,184,74,0.3)', fontSize: 12, lineHeight: 1.5,
 }
 const testBoxStyle: React.CSSProperties = {
   marginTop: 16, padding: 12, borderRadius: 10, fontSize: 11.5, lineHeight: 1.55,
