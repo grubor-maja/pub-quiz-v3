@@ -85,7 +85,9 @@ class AdminOrganizationController extends Controller
 
         if ($posts === []) {
             return response()->json([
-                'message' => "Nijedna objava nije povucena za @{$handle}.",
+                'message' => "Scraper nije vratio nijednu objavu za @{$handle}. "
+                    . 'Nalog je vidljiv, ali Instagram trenutno ne daje njegove objave scraperu. '
+                    . 'Probaj ponovo kasnije, ili dodaj organizaciju rucno pa kvizove unesi kroz admin.',
             ], 422);
         }
 

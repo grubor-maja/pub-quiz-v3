@@ -127,9 +127,22 @@ class ApifyService
                 }
             }
 
-            // A post with no identifier cannot be de-duplicated on re-sync, and
-            // one with no caption carries nothing to extract a quiz from.
+            // A post with no identifier cannot be de-duplicated on re-sync.
             if (($post['id'] ?? null) === null && ($post['shortCode'] ?? null) === null) {
+                continue;
+            }
+
+            // When an actor cannot reach an account's posts it answers with the
+            // profile instead, which carries a user id and so passes the check
+            // above. Left alone it becomes a post with no caption and no image,
+            // and the sync reports "no quiz found" for a reason that has nothing
+            // to do with the account's content.
+            if (!$this->looksLikePost($post)) {
+                Log::warning('Apify returned a non-post item, probably a profile', [
+                    'username' => $post['username'] ?? $post['ownerUsername'] ?? null,
+                    'keys' => array_slice(array_keys($item), 0, 12),
+                ]);
+
                 continue;
             }
 
@@ -143,6 +156,19 @@ class ApifyService
         }
 
         return $posts;
+    }
+
+    /**
+     * A real post carries its own short code, or at least something to read:
+     * a caption or a picture. A profile object has neither.
+     *
+     * @param  array<string, mixed>  $post
+     */
+    private function looksLikePost(array $post): bool
+    {
+        return ($post['shortCode'] ?? null) !== null
+            || trim((string) ($post['caption'] ?? '')) !== ''
+            || ($post['displayUrl'] ?? null) !== null;
     }
 
     /**

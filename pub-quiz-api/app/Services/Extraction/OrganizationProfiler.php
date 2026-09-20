@@ -35,7 +35,9 @@ class OrganizationProfiler
 
         if ($posts === []) {
             throw new \RuntimeException(
-                "Nijedna objava nije povucena za @{$handle}. Proveri da li je nalog javan i da li je naziv tacan."
+                "Scraper nije vratio nijednu objavu za @{$handle}. Proveri naziv naloga; "
+                . 'ako je tacan i nalog je javan, Instagram trenutno ne daje njegove objave. '
+                . 'Dodaj organizaciju rucno, sync ce je pokupiti kad objave opet budu dostupne.'
             );
         }
 
