@@ -10,6 +10,7 @@ import OrgChipsBar from '../components/OrgChipsBar'
 import CustomSelect from '../components/CustomSelect'
 import type { Quiz } from '../types'
 import { formatDate, formatTime, formatPrice, kvizWord, lokacijaWord } from '../lib/utils'
+import { useSeo } from '../lib/useSeo'
 
 // Fix default marker icons for Vite bundling
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -169,6 +170,12 @@ export default function MapPage() {
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
     )
   }
+
+  useSeo({
+    title: 'Mapa kvizova',
+    description: 'Mapa pab kvizova u Srbiji. Pronadji kviz blizu sebe po datumu, organizatoru i udaljenosti.',
+    path: '/mapa',
+  })
 
   return (
     <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>

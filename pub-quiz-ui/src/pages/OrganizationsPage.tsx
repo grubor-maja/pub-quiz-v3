@@ -4,12 +4,19 @@ import { Building2, AtSign, ChevronRight } from 'lucide-react'
 import { fetchOrganizations } from '../api'
 import type { Organization } from '../types'
 import { kvizWord } from '../lib/utils'
+import { useSeo } from '../lib/useSeo'
 
 export default function OrganizationsPage() {
   const { data: orgs, isLoading } = useQuery({
     queryKey: ['organizations'],
     queryFn: fetchOrganizations,
     staleTime: 5 * 60 * 1000,
+  })
+
+  useSeo({
+    title: 'Organizacije',
+    description: 'Organizatori pab kvizova u Srbiji. Pregledaj njihove kvizove, termine i lokacije.',
+    path: '/organizacije',
   })
 
   return (

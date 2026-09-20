@@ -1,9 +1,64 @@
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft, CalendarPlus } from 'lucide-react'
 import { fetchQuiz } from '../api'
 import { formatDate, formatPrice, formatTime, teamSizeLong } from '../lib/utils'
+import { useSeo, BASE_URL } from '../lib/useSeo'
 import HeartButton from '../components/HeartButton'
+import type { Quiz } from '../types'
+
+/** Strips the trailing date some imported titles carry. */
+function cleanTitle(t: string) {
+  return t.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()
+}
+
+/**
+ * Event markup, which is what lets a listing show the date and venue straight
+ * in the search result rather than just a blue link.
+ */
+function buildEventJsonLd(quiz: Quiz) {
+  const start = quiz.quiz_date
+    ? `${quiz.quiz_date.slice(0, 10)}T${(quiz.quiz_time ?? '20:00').slice(0, 5)}:00+02:00`
+    : undefined
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: cleanTitle(quiz.title),
+    description: quiz.description?.slice(0, 500) ?? `Pab kviz u organizaciji ${quiz.organization.name}.`,
+    startDate: start,
+    eventStatus: quiz.status === 'cancelled'
+      ? 'https://schema.org/EventCancelled'
+      : 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    url: `${BASE_URL}/kvizovi/${quiz.slug}`,
+    image: quiz.cover_image_url ? [quiz.cover_image_url] : undefined,
+    location: {
+      '@type': 'Place',
+      name: quiz.location ?? quiz.organization.name,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: quiz.address ?? undefined,
+        addressCountry: 'RS',
+      },
+    },
+    organizer: {
+      '@type': 'Organization',
+      name: quiz.organization.name,
+      url: `${BASE_URL}/organizacije/${quiz.organization.slug}`,
+    },
+    offers: quiz.entry_fee !== null && quiz.entry_fee !== undefined
+      ? {
+          '@type': 'Offer',
+          price: String(quiz.entry_fee),
+          priceCurrency: 'RSD',
+          availability: 'https://schema.org/InStock',
+          url: `${BASE_URL}/kvizovi/${quiz.slug}`,
+        }
+      : undefined,
+  }
+}
 
 export default function QuizDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -12,6 +67,26 @@ export default function QuizDetailPage() {
     queryKey: ['quiz', slug],
     queryFn: () => fetchQuiz(slug!),
     enabled: !!slug,
+  })
+
+  // Hooks cannot sit behind the loading and error returns below, so the values
+  // fall back until the quiz arrives.
+  const jsonLd = useMemo(() => (quiz ? buildEventJsonLd(quiz) : undefined), [quiz])
+
+  useSeo({
+    title: quiz ? `${cleanTitle(quiz.title)}, ${quiz.organization.name}` : 'Kviz',
+    description: quiz
+      ? [
+          cleanTitle(quiz.title),
+          quiz.quiz_date ? formatDate(quiz.quiz_date) : null,
+          quiz.quiz_time ? `${formatTime(quiz.quiz_time)}h` : null,
+          quiz.location,
+          quiz.entry_fee !== null ? `kotizacija ${formatPrice(quiz.entry_fee)}` : null,
+        ].filter(Boolean).join(', ')
+      : 'Detalji pab kviza.',
+    path: `/kvizovi/${slug}`,
+    image: quiz?.cover_image_url ?? undefined,
+    jsonLd,
   })
 
   if (isLoading) {
