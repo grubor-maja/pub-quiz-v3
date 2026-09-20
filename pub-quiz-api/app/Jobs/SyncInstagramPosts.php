@@ -136,10 +136,16 @@ class SyncInstagramPosts implements ShouldQueue
 
             // A post yields zero (not a quiz announcement), one, or - for schedule
             // posts listing many dates at once - several quizzes.
-            // Slides are kept on raw_data by the scraper, so a re-run can read
-            // them again without paying for another scrape.
-            $carousel = data_get($import->raw_data, 'carouselImages', []);
+            // Slides live on raw_data, so a re-run reads them again for free
+            // rather than paying for another scrape. Posts imported before the
+            // normalisation existed only carry the actor's own key, so the
+            // same reader runs over the raw payload as a fallback.
+            $carousel = data_get($import->raw_data, 'carouselImages');
             $carousel = is_array($carousel) ? array_values(array_filter($carousel, 'is_string')) : [];
+
+            if ($carousel === [] && is_array($import->raw_data)) {
+                $carousel = ApifyService::carouselImages($import->raw_data);
+            }
 
             $candidates = $extractor->extract($org, $caption, $postDate, $import->image_url, $carousel);
             $import->extracted_data = $candidates;

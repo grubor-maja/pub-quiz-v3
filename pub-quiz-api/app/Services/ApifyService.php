@@ -137,7 +137,7 @@ class ApifyService
                 ? "https://www.instagram.com/p/{$post['shortCode']}/"
                 : null;
 
-            $post['carouselImages'] = $this->carouselImages($item);
+            $post['carouselImages'] = self::carouselImages($item);
 
             $posts[] = $post;
         }
@@ -153,10 +153,15 @@ class ApifyService
      * room to describe them all, so the later quizzes exist only as pictures.
      * Keeping the slides is what makes those recoverable.
      *
+     * Public and static so the sync job can run it over the raw payload of
+     * posts scraped before this normalisation existed. Those already hold the
+     * slides under the actor's own key, and re-reading them costs nothing,
+     * while scraping them again would.
+     *
      * @param  array<string, mixed>  $item
      * @return array<int, string>
      */
-    private function carouselImages(array $item): array
+    public static function carouselImages(array $item): array
     {
         foreach (self::CAROUSEL_KEYS as $key) {
             $slides = $item[$key] ?? null;
@@ -168,7 +173,7 @@ class ApifyService
             foreach ($slides as $slide) {
                 $url = is_string($slide)
                     ? $slide
-                    : $this->firstPresent((array) $slide, ['displayUrl', 'url', 'image.url', 'imageUrl']);
+                    : self::pick((array) $slide, ['displayUrl', 'url', 'image.url', 'imageUrl']);
 
                 if (is_string($url) && str_starts_with($url, 'http')) {
                     $urls[] = $url;
@@ -188,6 +193,15 @@ class ApifyService
      * @param  array<int, string>  $aliases  may use dot notation for nesting
      */
     private function firstPresent(array $item, array $aliases): mixed
+    {
+        return self::pick($item, $aliases);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  array<int, string>  $aliases  may use dot notation for nesting
+     */
+    private static function pick(array $item, array $aliases): mixed
     {
         foreach ($aliases as $alias) {
             $value = data_get($item, $alias);
