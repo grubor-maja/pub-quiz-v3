@@ -10,6 +10,7 @@ import Toolbar from '../components/Toolbar'
 import OrgChipsBar from '../components/OrgChipsBar'
 import type { QuizFilters } from '../types'
 import { rezultatWord } from '../lib/utils'
+import { useSeo } from '../lib/useSeo'
 
 type Tab = 'all' | 'subscribed' | 'archive'
 
@@ -78,6 +79,14 @@ export default function HomePage() {
 
   const hasFilters = filters.search || filters.org || filters.date_from || filters.date_to
   const currentPage = filters.page ?? 1
+
+  useSeo({
+    title: tab === 'archive' ? 'Arhiva kvizova' : 'Pab kvizovi u Srbiji',
+    description: tab === 'archive'
+      ? 'Arhiva odrzanih pab kvizova u Srbiji. Pretrazi po organizatoru, lokaciji i datumu.'
+      : 'Agregator pab kvizova u Srbiji. Svi predstojeci kvizovi na jednom mestu: datum, vreme, lokacija, kotizacija i organizator.',
+    path: '/',
+  })
 
   const clearFilters = () => {
     setFilters({})

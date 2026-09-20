@@ -162,6 +162,21 @@ NGINX_SITE="server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    # Crawlers expect these at the root. Without an explicit rule the SPA
+    # catch-all answers with index.html and a text/html content type, which is
+    # worse than a 404: the crawler is told the file exists and is HTML.
+    location = /sitemap.xml {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location = /robots.txt {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:5173;
         proxy_set_header Host \$host;
