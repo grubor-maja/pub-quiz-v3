@@ -45,7 +45,7 @@ class DefaultExtractor implements ExtractorInterface
         // A post whose slides each announce their own quiz cannot be read from
         // the caption alone: Instagram caps it at 2200 characters and the later
         // quizzes get cut off mid sentence. Those slides are read one by one.
-        if ($this->readsCarouselSlides($org) && count($carouselImages) > 1) {
+        if (count($carouselImages) > 1 && $this->readsCarouselSlides($org, $caption)) {
             return $this->extractFromSlides($org, $caption, $postDate, $carouselImages);
         }
 
@@ -88,8 +88,12 @@ class DefaultExtractor implements ExtractorInterface
      * Off by default: for most organizations the extra slides are photos of the
      * same evening, and reading each one would invent quizzes that do not exist
      * while spending a vision call per picture.
+     *
+     * The caption is passed because even an organization that does post weekly
+     * schedules also posts winner photos and trivia as carousels, and reading
+     * eight slides to conclude "not a quiz" costs eight vision calls.
      */
-    protected function readsCarouselSlides(Organization $org): bool
+    protected function readsCarouselSlides(Organization $org, string $caption): bool
     {
         return false;
     }

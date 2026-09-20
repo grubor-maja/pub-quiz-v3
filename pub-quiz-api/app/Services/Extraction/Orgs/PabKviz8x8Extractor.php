@@ -18,9 +18,23 @@ use App\Services\Extraction\DefaultExtractor;
  */
 class PabKviz8x8Extractor extends DefaultExtractor
 {
-    protected function readsCarouselSlides(Organization $org): bool
+    /** Marks a weekly schedule, as opposed to a winner photo or a trivia post. */
+    private const SCHEDULE_MARKERS = ['raspored', 'nedeljni plan'];
+
+    protected function readsCarouselSlides(Organization $org, string $caption): bool
     {
-        return true;
+        // They post winner photos and trivia as carousels too, often with eight
+        // slides. Reading those would spend a vision call per picture only to
+        // conclude there is no quiz on any of them.
+        $haystack = mb_strtolower($caption);
+
+        foreach (self::SCHEDULE_MARKERS as $marker) {
+            if (str_contains($haystack, $marker)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function promptRules(Organization $org): string
