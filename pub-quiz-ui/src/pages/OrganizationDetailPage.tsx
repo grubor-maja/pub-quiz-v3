@@ -5,11 +5,11 @@ import { ArrowLeft } from 'lucide-react'
 import { fetchOrganization } from '../api'
 import QuizCard from '../components/QuizCard'
 import SubscribeButton from '../components/SubscribeButton'
-import { OrgDragon } from '../components/OrgBadge'
+import { OrgBadge, OrgDragon } from '../components/OrgBadge'
 import EmptyState from '../components/EmptyState'
 import { Instagram } from '../components/icons'
 import { accentOf, tint } from '../lib/dragon'
-import { kvizWord, lokacijaWord, pluralSr, todayIso } from '../lib/utils'
+import { kvizWord, pluralSr, todayIso } from '../lib/utils'
 import { useSeo } from '../lib/useSeo'
 
 export default function OrganizationDetailPage() {
@@ -60,7 +60,6 @@ export default function OrganizationDetailPage() {
   const all = (data.quizzes ?? []).map(q => ({ ...q, organization: { ...org } }))
   const upcoming = all.filter(q => (q.quiz_date ?? '').slice(0, 10) >= today).sort((a, b) => (a.quiz_date ?? '').localeCompare(b.quiz_date ?? ''))
   const past = all.filter(q => (q.quiz_date ?? '').slice(0, 10) < today)
-  const venues = new Set(upcoming.map(q => q.location).filter(Boolean)).size
   const shown = tab === 'predstojeci' ? upcoming : past
   const igUrl = org.instagram_handle ? `https://instagram.com/${org.instagram_handle}` : null
 
@@ -79,7 +78,10 @@ export default function OrganizationDetailPage() {
               <span style={{ position: 'relative' }}><OrgDragon org={org} size={250} /></span>
             </div>
             <div style={{ flex: '1 1 420px', minWidth: 0 }}>
-              <h1 className="display anim-up" style={{ fontSize: 'clamp(38px, 5vw, 64px)', fontWeight: 700, lineHeight: 0.98, letterSpacing: '-0.035em', marginBottom: 14 }}>{org.name}</h1>
+              <div className="anim-up" style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginBottom: 14 }}>
+                <h1 className="display" style={{ fontSize: 'clamp(38px, 5vw, 64px)', fontWeight: 700, lineHeight: 0.98, letterSpacing: '-0.035em' }}>{org.name}</h1>
+                <OrgBadge org={org} size={64} />
+              </div>
               {org.description && (
                 <p className="anim-up" style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--text-tertiary)', maxWidth: 560, marginBottom: 22, animationDelay: '0.08s' }}>{org.description}</p>
               )}
@@ -91,10 +93,10 @@ export default function OrganizationDetailPage() {
                   </a>
                 )}
               </div>
-              <div className="anim-up" style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 28, animationDelay: '0.2s' }}>
-                <Stat value={upcoming.length} label={pluralSr(upcoming.length, 'predstojeći kviz', 'predstojeća kviza', 'predstojećih kvizova')} color={accent} />
-                <Stat value={venues} label={lokacijaWord(venues)} color={accent} />
-              </div>
+              <p className="anim-up" style={{ marginTop: 24, fontSize: 17, color: 'var(--text-muted)', animationDelay: '0.2s' }}>
+                <span className="display" style={{ fontSize: 22, fontWeight: 700, color: accent }}>{upcoming.length}</span>{' '}
+                {pluralSr(upcoming.length, 'predstojeći kviz', 'predstojeća kviza', 'predstojećih kvizova')}
+              </p>
             </div>
           </div>
         </div>
@@ -122,15 +124,6 @@ export default function OrganizationDetailPage() {
         )}
         <p style={{ marginTop: 18, fontSize: 14, color: 'var(--text-muted)' }}>{all.length} {kvizWord(all.length)} ukupno na sajtu</p>
       </div>
-    </div>
-  )
-}
-
-function Stat({ value, label, color }: { value: number; label: string; color: string }) {
-  return (
-    <div>
-      <span className="display" style={{ display: 'block', fontSize: 30, fontWeight: 700, color }}>{value}</span>
-      <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{label}</span>
     </div>
   )
 }

@@ -539,6 +539,13 @@ a, button, [role="button"], input, textarea, select,
 
 .map-aside { max-width: 420px; }
 .map-area { min-height: 560px; }
+/* Desktop: the page is exactly window height (set in MapPage); the list
+   scrolls inside the aside instead of the whole page scrolling. */
+@media (min-width: 900px) {
+  .map-page { flex-wrap: nowrap !important; overflow: hidden; }
+  .map-page .map-aside { overflow-y: auto; padding-bottom: 24px !important; }
+  .map-page .map-area { min-height: 0; }
+}
 @media (max-width: 899px) {
   .map-aside { order: 1; max-width: none; border-right: 0 !important; }
   .map-area { order: 0; min-height: 55vh; }

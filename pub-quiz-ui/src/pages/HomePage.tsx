@@ -85,7 +85,7 @@ export default function HomePage() {
 
       <div ref={listRef} style={{ scrollMarginTop: 80, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
         <div role="tablist" aria-label="Prikaz kvizova" style={{ display: 'flex', gap: 6, padding: 5, borderRadius: 14, background: 'rgba(17,19,46,0.85)', border: '1px solid var(--border-subtle)' }}>
-          {TABS.map(t => {
+          {TABS.filter(t => user || t.key !== 'pratim').map(t => {
             const on = state.tab === t.key
             return (
               <button key={t.key} type="button" role="tab" aria-selected={on} onClick={() => pickTab(t.key)} style={{

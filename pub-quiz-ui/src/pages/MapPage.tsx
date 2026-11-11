@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
@@ -10,6 +10,7 @@ import api, { fetchOrganizations } from '../api'
 import PinFlag from '../components/PinFlag'
 import { OrgBadge } from '../components/OrgBadge'
 import EmptyState from '../components/EmptyState'
+import OrgMultiSelect from '../components/OrgMultiSelect'
 import type { Quiz } from '../types'
 import { addDays, cleanTitle, endOfWeekIso, formatTime, kvizWord, relativeDay, todayIso, weekendIso } from '../lib/utils'
 import { useGeo } from '../lib/useGeo'
@@ -86,6 +87,22 @@ export default function MapPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const geo = useGeo()
 
+  // On desktop the page fills exactly the window below the nav: the list
+  // scrolls on its own and the selected-quiz card in the map's corner is
+  // always in view. Measured rather than hard-coded so a taller nav (or the
+  // iOS safe area) cannot push the page into scrolling again.
+  const pageRef = useRef<HTMLDivElement>(null)
+  const [fitHeight, setFitHeight] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const fit = () => {
+      if (!pageRef.current || window.innerWidth < 900) { setFitHeight(null); return }
+      setFitHeight(Math.max(420, window.innerHeight - pageRef.current.getBoundingClientRect().top - window.scrollY))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [])
+
   useSeo({
     title: 'Mapa kvizova',
     description: 'Mapa pab kvizova u Srbiji. Pronađi kviz blizu sebe po datumu, organizatoru i udaljenosti.',
@@ -128,10 +145,8 @@ export default function MapPage() {
   const points: [number, number][] = groups.map(g => [g.lat, g.lng])
   const flyTarget: [number, number] | null = sel ? [sel.latitude, sel.longitude] : null
 
-  const toggleOrg = (slug: string) => setOrgFilter(p => (p.includes(slug) ? p.filter(s => s !== slug) : [...p, slug]))
-
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 'calc(100vh - 64px)' }}>
+    <div ref={pageRef} className="map-page" style={{ display: 'flex', flexWrap: 'wrap', ...(fitHeight ? { height: fitHeight } : { minHeight: 'calc(100vh - 64px)' }) }}>
       <aside className="map-aside" style={{ flex: '1 1 340px', padding: '22px 20px 120px', borderRight: '1px solid var(--border-subtle)', background: 'rgba(10,11,34,0.85)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <h1 className="display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em' }}>Kvizovi na mapi</h1>
 
@@ -161,13 +176,7 @@ export default function MapPage() {
         {geo.message && <p style={{ fontSize: 13, color: '#FFB3C1' }}>{geo.message}</p>}
 
         {orgs && orgs.length > 0 && (
-          <div role="group" aria-label="Organizatori" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {orgs.map(o => (
-              <button key={o.id} type="button" className={`chip with-badge${orgFilter.includes(o.slug) ? ' on' : ''}`} aria-pressed={orgFilter.includes(o.slug)} onClick={() => toggleOrg(o.slug)} style={{ fontSize: 13 }}>
-                <OrgBadge org={o} size={24} />{o.name}
-              </button>
-            ))}
-          </div>
+          <OrgMultiSelect orgs={orgs} selected={orgFilter} onChange={slugs => { setOrgFilter(slugs); setSelected(null) }} />
         )}
 
         <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
@@ -231,7 +240,7 @@ export default function MapPage() {
             position: 'absolute', right: 16, bottom: 16, zIndex: 900, width: 'min(340px, calc(100% - 32px))', display: 'flex', gap: 14, padding: 12, borderRadius: 20,
             background: 'rgba(13,15,42,0.96)', border: '1px solid rgba(182,242,62,0.35)', backdropFilter: 'blur(12px)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
           }}>
-            {sel.cover_image_url && <img src={sel.cover_image_url} alt="" style={{ width: 88, aspectRatio: '4 / 5', objectFit: 'cover', borderRadius: 12, flex: 'none' }} />}
+            {sel.cover_image_url && <img src={sel.cover_image_url} alt="" onError={e => { e.currentTarget.style.display = 'none' }} style={{ width: 88, aspectRatio: '4 / 5', objectFit: 'cover', borderRadius: 12, flex: 'none' }} />}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {relativeDay(sel.quiz_date)}{sel.quiz_time ? ` · ${formatTime(sel.quiz_time)}` : ''}
