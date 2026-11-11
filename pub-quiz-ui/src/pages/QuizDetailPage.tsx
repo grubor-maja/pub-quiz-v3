@@ -1,17 +1,17 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo, type ReactNode } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, Clock, MapPin, Users, Coins, Phone, ExternalLink, ArrowLeft, CalendarPlus } from 'lucide-react'
-import { fetchQuiz } from '../api'
-import { formatDate, formatPrice, formatTime, teamSizeLong } from '../lib/utils'
+import { ArrowLeft, CalendarPlus, Clock, Coins, MapPin, Phone, Users, Calendar } from 'lucide-react'
+import { Instagram } from '../components/icons'
+import { fetchOrganization, fetchQuiz } from '../api'
+import { cleanTitle, formatDate, formatPrice, formatTime, longDate, relativeDay, shortDate, teamSizeLong, todayIso } from '../lib/utils'
+import { accentOf, tint } from '../lib/dragon'
 import { useSeo, BASE_URL } from '../lib/useSeo'
 import HeartButton from '../components/HeartButton'
+import SubscribeButton from '../components/SubscribeButton'
+import { OrgBadge, OrgDragon } from '../components/OrgBadge'
+import EmptyState from '../components/EmptyState'
 import type { Quiz } from '../types'
-
-/** Strips the trailing date some imported titles carry. */
-function cleanTitle(t: string) {
-  return t.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()
-}
 
 /**
  * Event markup, which is what lets a listing show the date and venue straight
@@ -60,6 +60,8 @@ function buildEventJsonLd(quiz: Quiz) {
   }
 }
 
+const MiniMap = lazy(() => import('../components/MiniMap'))
+
 export default function QuizDetailPage() {
   const { slug } = useParams<{ slug: string }>()
 
@@ -67,6 +69,14 @@ export default function QuizDetailPage() {
     queryKey: ['quiz', slug],
     queryFn: () => fetchQuiz(slug!),
     enabled: !!slug,
+  })
+
+  const orgSlug = quiz?.organization.slug
+  const { data: orgData } = useQuery({
+    queryKey: ['organization', orgSlug],
+    queryFn: () => fetchOrganization(orgSlug!),
+    enabled: !!orgSlug,
+    staleTime: 60 * 1000,
   })
 
   // Hooks cannot sit behind the loading and error returns below, so the values
@@ -89,25 +99,18 @@ export default function QuizDetailPage() {
     jsonLd,
     // Held back until the quiz arrives, so the metadata the server wrote for
     // this URL is not replaced by the fallbacks above while the request is in
-    // flight. On an in-app navigation there is nothing to preserve, but the
-    // stale title belongs to the previous page for the same fraction of a
-    // second either way.
+    // flight.
     enabled: !!quiz,
   })
 
   if (isLoading) {
     return (
-      <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 480px) 1fr',
-          gap: 24,
-        }}>
-          <div style={{ aspectRatio: '1/1', background: 'var(--bg-surface)', borderRadius: 14 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ height: 26, background: 'var(--bg-surface)', borderRadius: 6, width: '70%' }} />
-            <div style={{ height: 14, background: 'var(--bg-surface)', borderRadius: 4, width: '40%' }} />
-            <div style={{ height: 200, background: 'var(--bg-surface)', borderRadius: 10, marginTop: 8 }} />
+      <div className="page">
+        <div className="detail-hero" style={{ marginTop: 40 }}>
+          <div className="detail-poster skeleton" style={{ aspectRatio: '4 / 5', borderRadius: 22 }} />
+          <div className="detail-info">
+            <div className="skeleton" style={{ height: 56, width: '70%', borderRadius: 12 }} />
+            <div className="skeleton" style={{ height: 200, borderRadius: 16 }} />
           </div>
         </div>
       </div>
@@ -116,252 +119,201 @@ export default function QuizDetailPage() {
 
   if (isError || !quiz) {
     return (
-      <div style={{ padding: '80px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Kviz nije pronađen.
-        <Link to="/" style={{ display: 'block', marginTop: 12, color: 'var(--accent-amber)' }}>
-          Nazad na listu
-        </Link>
+      <div className="page" style={{ paddingTop: 72 }}>
+        <EmptyState title="Ovaj kviz nismo našli" text="Možda je obrisan ili je link pogrešan." action={<Link to="/" className="btn btn-primary">Nazad na kvizove</Link>} />
       </div>
     )
   }
 
-  const teamSize = teamSizeLong(quiz.min_team_members, quiz.max_team_members)
+  const org = quiz.organization
+  const accent = accentOf(org)
+  const title = cleanTitle(quiz.title)
+  const team = teamSizeLong(quiz.min_team_members, quiz.max_team_members)
+  const cancelled = quiz.status === 'cancelled'
+  // Signing up or saving to a calendar makes no sense once the evening is over.
+  const over = (quiz.quiz_date ?? '').slice(0, 10) < todayIso()
+  const day = relativeDay(quiz.quiz_date)
+  const phone = quiz.contact_phone
+  const lat = quiz.latitude != null ? Number(quiz.latitude) : null
+  const lng = quiz.longitude != null ? Number(quiz.longitude) : null
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([quiz.location, quiz.address].filter(Boolean).join(', '))}`
+  const more = (orgData?.quizzes ?? [])
+    .filter(q => q.slug !== quiz.slug && (q.quiz_date ?? '').slice(0, 10) >= todayIso())
+    .sort((a, b) => (a.quiz_date ?? '').localeCompare(b.quiz_date ?? ''))
+    .slice(0, 4)
+  const subscribed = orgData?.organization.is_subscribed ?? false
 
   return (
-    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
-      <div className="quiz-detail-grid">
-        {/* Back link - left rail */}
-        <Link
-          to="/"
-          className="back-rail"
-          style={{
-            gridArea: 'back',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            textDecoration: 'none',
-            padding: '6px 8px',
-            borderRadius: 7,
-            marginTop: 4,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <ArrowLeft size={13} />
-          Svi kvizovi
+    <div style={{ position: 'relative' }}>
+      {quiz.cover_image_url && (
+        <div aria-hidden="true" style={{ position: 'absolute', inset: '-120px -10% auto', height: 760, overflow: 'hidden', pointerEvents: 'none' }}>
+          <img src={quiz.cover_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(70px) saturate(1.3)', opacity: 0.3 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,8,24,0) 40%, #070818)' }} />
+        </div>
+      )}
+
+      <div className="page" style={{ position: 'relative', paddingTop: 20 }}>
+        <Link to="/" className="back-rail" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginLeft: -12, borderRadius: 10, color: 'var(--text-tertiary)', textDecoration: 'none', fontSize: 14 }}>
+          <ArrowLeft size={16} aria-hidden="true" /> Svi kvizovi
         </Link>
 
-        {/* Title + org badge - aligned above image (left) */}
-        <div style={{
-          gridArea: 'title',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexWrap: 'wrap',
-        }}>
-          <h1 style={{
-            fontSize: 'clamp(18px, 4.5vw, 24px)',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1.2,
-            margin: 0,
-            textTransform: 'uppercase',
-            wordBreak: 'break-word',
-          }}>
-            {quiz.title}
-          </h1>
-          <span style={{
-            fontSize: 11,
-            padding: '4px 9px',
-            borderRadius: 6,
-            background: 'var(--accent-amber-soft)',
-            color: 'var(--accent-amber)',
-            border: '0.5px solid rgba(233,184,74,0.25)',
-            whiteSpace: 'nowrap',
-          }}>
-            {quiz.organization.name}
-          </span>
-          <HeartButton
-            quizSlug={quiz.slug}
-            isFavorited={quiz.is_favorited ?? false}
-            size={16}
-          />
-
-          {quiz.status === 'cancelled' && (
-            <div style={{
-              width: '100%',
-              padding: '10px 14px',
-              borderRadius: 10,
-              background: 'rgba(220,38,38,0.12)',
-              border: '0.5px solid rgba(220,38,38,0.4)',
-              color: '#f87171',
-              fontSize: 13,
-              fontWeight: 600,
-            }}>
-              Ovaj kviz je otkazan.
-            </div>
-          )}
-        </div>
-
-        {/* Image - 4:5 portrait like Instagram */}
-        <div className="quiz-detail-image" style={{
-          gridArea: 'image',
-          position: 'relative',
-          aspectRatio: '4/5',
-          borderRadius: 14,
-          overflow: 'hidden',
-          background: 'var(--bg-surface)',
-          border: '0.5px solid var(--border-subtle)',
-        }}>
-          {quiz.cover_image_url ? (
-            <img
-              src={quiz.cover_image_url}
-              alt={quiz.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <div style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-muted)',
-              fontSize: 13,
-            }}>
-              Bez slike
-            </div>
-          )}
-        </div>
-
-        {/* Right: Info */}
-        <div style={{ gridArea: 'info', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Info card */}
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '0.5px solid var(--border-subtle)',
-            borderRadius: 12,
-            padding: 4,
-          }}>
-            {quiz.quiz_date && (
-              <InfoRow icon={<Calendar size={14} />} label="Datum" value={formatDate(quiz.quiz_date)} />
-            )}
-            {quiz.quiz_time && (
-              <InfoRow icon={<Clock size={14} />} label="Vreme" value={`${formatTime(quiz.quiz_time)}h`} />
-            )}
-            {(quiz.location || quiz.address) && (
-              <InfoRow
-                icon={<MapPin size={14} />}
-                label="Lokacija"
-                value={quiz.location ?? quiz.address ?? ''}
-                sub={quiz.location && quiz.address ? quiz.address : undefined}
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  [quiz.location, quiz.address].filter(Boolean).join(', ')
-                )}`}
-                external
-              />
-            )}
-            <InfoRow
-              icon={<Coins size={14} />}
-              label="Kotizacija"
-              value={`${formatPrice(quiz.entry_fee)} po timu`}
-            />
-            {teamSize && (
-              <InfoRow
-                icon={<Users size={14} />}
-                label="Tim"
-                value={teamSize}
-              />
-            )}
-            {quiz.contact_phone && (
-              <InfoRow
-                icon={<Phone size={14} />}
-                label="Kontakt"
-                value={quiz.contact_phone}
-                href={`tel:${quiz.contact_phone}`}
-              />
-            )}
-            {quiz.instagram_post_url && (
-              <InfoRow
-                icon={<ExternalLink size={14} />}
-                label="Instagram"
-                value="Pogledaj objavu"
-                href={quiz.instagram_post_url}
-                external
-                last
-              />
+        <section className="detail-hero" style={{ marginTop: 16 }}>
+          <div className="detail-poster anim-up">
+            {quiz.cover_image_url ? (
+              <img src={quiz.cover_image_url} alt={`Poster: ${title}`} style={{
+                width: '100%', aspectRatio: '4 / 5', objectFit: 'cover', display: 'block', borderRadius: 22,
+                boxShadow: '0 40px 80px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(241,242,255,0.12)',
+                filter: cancelled ? 'grayscale(0.85)' : undefined,
+              }} />
+            ) : (
+              <div style={{ aspectRatio: '4 / 5', borderRadius: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `radial-gradient(circle at 50% 40%, ${tint(accent, 0.35)}, ${tint(accent, 0.06)} 70%), #0D0F2A` }}>
+                <OrgDragon org={org} size={220} />
+              </div>
             )}
           </div>
 
-          {quiz.contact_phone && (
-            <a
-              href={`tel:${quiz.contact_phone}`}
-              className="btn-amber"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '13px 16px',
-                borderRadius: 10,
-                fontSize: 13,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              <Phone size={14} />
-              Prijavi tim: {quiz.contact_phone}
-            </a>
-          )}
+          <div className="detail-info">
+            <div className="detail-title-row">
+              <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+                <div className="anim-up" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, animationDelay: '0.08s' }}>
+                  {cancelled ? (
+                    <span style={{ padding: '7px 12px', borderRadius: 999, background: 'var(--danger)', color: '#2A0A12', fontSize: 13, fontWeight: 700 }}>OTKAZANO</span>
+                  ) : day && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 999, background: day === 'Večeras' ? 'var(--lime)' : 'rgba(241,242,255,0.08)', color: day === 'Večeras' ? 'var(--on-lime)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 700 }}>
+                      {day === 'Večeras' && <span className="live-dot dark" />}
+                      {day.toUpperCase()}{quiz.quiz_time ? ` · ${formatTime(quiz.quiz_time)}` : ''}
+                    </span>
+                  )}
+                </div>
+                <h1 className="display anim-up" style={{ fontSize: 'clamp(34px, 4.6vw, 60px)', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.035em', animationDelay: '0.12s', textDecoration: cancelled ? 'line-through' : undefined }}>
+                  {title}
+                </h1>
+              </div>
 
-          {quiz.quiz_date && (
-            <a
-              href={`/api/quizzes/${quiz.slug}/calendar.ics`}
-              target="_blank"
-              rel="noopener"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '11px 16px',
-                borderRadius: 10,
-                fontSize: 12.5,
-                fontWeight: 500,
-                textDecoration: 'none',
-                background: 'rgba(255,255,255,0.03)',
-                border: '0.5px solid var(--border-default)',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              <CalendarPlus size={14} />
-              Dodaj u kalendar
-            </a>
-          )}
-        </div>
+              <div className="anim-peek" style={{
+                flex: '0 1 300px', position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px 12px 8px', marginTop: 18,
+                borderRadius: 22, background: `linear-gradient(120deg, ${tint(accent, 0.2)}, rgba(17,19,46,0.85) 65%)`, border: `1px solid ${tint(accent, 0.38)}`,
+              }}>
+                <span style={{ flex: 'none', margin: '-40px 0 -14px' }}><OrgDragon org={org} size={104} /></span>
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Link to={`/organizacije/${org.slug}`} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', textDecoration: 'none', minWidth: 0 }}>
+                    <OrgBadge org={org} size={32} />
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)' }}>Organizator</span>
+                      <span className="display" style={{ display: 'block', fontSize: 17, fontWeight: 700, lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis' }}>{org.name}</span>
+                    </span>
+                  </Link>
+                  <span><SubscribeButton slug={org.slug} isSubscribed={subscribed} org={org} size="sm" color={accent} /></span>
+                </span>
+              </div>
+            </div>
 
-        {/* Description - inside grid, spans image+info cols so it aligns with image on left */}
-        {quiz.description && (
-          <div style={{
-            gridArea: 'desc',
-            marginTop: 14,
-            padding: '20px 22px',
-            background: 'var(--bg-surface)',
-            border: '0.5px solid var(--border-subtle)',
-            borderRadius: 12,
-          }}>
-            <Description text={quiz.description} />
+            {cancelled && (
+              <div role="status" style={{ padding: '12px 16px', borderRadius: 14, background: 'var(--danger-soft)', border: '1px solid rgba(255,92,122,0.4)', color: '#FFB3C1', fontWeight: 600 }}>
+                Ovaj kviz je otkazan.
+              </div>
+            )}
+
+            <div className="fact-grid anim-up" style={{ animationDelay: '0.2s' }}>
+              {quiz.quiz_date && <Fact icon={<Calendar size={18} />} label="Datum" value={longDate(quiz.quiz_date)} />}
+              {quiz.quiz_time && <Fact icon={<Clock size={18} />} label="Vreme" value={formatTime(quiz.quiz_time)} />}
+              {(quiz.location || quiz.address) && (
+                <Fact
+                  icon={<MapPin size={18} />}
+                  label="Lokacija"
+                  value={<a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--lime)', textDecoration: 'none' }}>{quiz.location ?? quiz.address}</a>}
+                  sub={quiz.location && quiz.address ? quiz.address : undefined}
+                />
+              )}
+              <Fact icon={<Coins size={18} />} label="Kotizacija" value={formatPrice(quiz.entry_fee)} />
+              {team && <Fact icon={<Users size={18} />} label="Ekipa" value={team} />}
+              {phone && <Fact icon={<Phone size={18} />} label="Kontakt" value={<a href={`tel:${phone}`} style={{ color: 'var(--lime)', textDecoration: 'none' }}>{phone}</a>} />}
+            </div>
+
+            <div className="detail-actions sticky-mobile anim-up" style={{ animationDelay: '0.28s' }}>
+              {phone && !cancelled && !over && (
+                <a href={`tel:${phone}`} className="btn btn-primary">
+                  <Phone size={18} aria-hidden="true" /><span className="only-desktop">Prijavi ekipu: {phone}</span><span className="only-mobile">Prijavi ekipu</span>
+                </a>
+              )}
+              {quiz.instagram_post_url && (
+                <a href={quiz.instagram_post_url} target="_blank" rel="noopener noreferrer" className={`btn ${phone && !over ? 'btn-secondary' : 'btn-primary'}`}>
+                  <Instagram size={18} />{phone && !over ? <span className="only-desktop">Instagram objava</span> : 'Instagram objava'}
+                </a>
+              )}
+              {quiz.quiz_date && !cancelled && !over && (
+                <a href={`/api/quizzes/${quiz.slug}/calendar.ics`} target="_blank" rel="noopener" className="btn btn-secondary" aria-label="Dodaj u kalendar">
+                  <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span>
+                </a>
+              )}
+              <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={20} style={{ width: 48, height: 48, borderRadius: 14 }} />
+            </div>
           </div>
+        </section>
+
+        <section style={{ marginTop: 48, display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'stretch' }}>
+          {quiz.description && (
+            <div style={{ flex: '999 1 520px', minWidth: 0, padding: '24px 26px', borderRadius: 22, background: 'rgba(17,19,46,0.75)', border: '1px solid var(--border-subtle)' }}>
+              <h2 className="display" style={{ fontSize: 22, fontWeight: 700, marginBottom: 14 }}>O kvizu</h2>
+              <Description text={quiz.description} />
+            </div>
+          )}
+          {lat !== null && lng !== null && !Number.isNaN(lat) && !Number.isNaN(lng) && (
+            <div style={{ flex: '1 1 320px', minHeight: 260, position: 'relative', borderRadius: 22, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+              <Suspense fallback={<div className="skeleton" style={{ position: 'absolute', inset: 0 }} />}>
+                <MiniMap lat={lat} lng={lng} />
+              </Suspense>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{
+                position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 500, padding: '12px 14px', borderRadius: 14,
+                background: 'rgba(7,8,24,0.88)', backdropFilter: 'blur(8px)', color: 'var(--text-primary)', textDecoration: 'none',
+              }}>
+                <span style={{ display: 'block', fontWeight: 700 }}>{quiz.location ?? quiz.address}</span>
+                <span style={{ display: 'block', fontSize: 14, color: 'var(--text-muted)' }}>Otvori u Google mapama →</span>
+              </a>
+            </div>
+          )}
+        </section>
+
+        {more.length > 0 && (
+          <section style={{ marginTop: 44 }}>
+            <h2 className="display" style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Još od organizatora {org.name}</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+              {more.map(q => (
+                <Link key={q.id} to={`/kvizovi/${q.slug}`} className="lift" style={{ display: 'flex', gap: 14, padding: 12, borderRadius: 18, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)' }}>
+                  {q.cover_image_url
+                    ? <img src={q.cover_image_url} alt="" loading="lazy" style={{ width: 80, aspectRatio: '4 / 5', objectFit: 'cover', borderRadius: 12, flex: 'none' }} />
+                    : <span style={{ width: 80, aspectRatio: '4 / 5', borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tint(accent, 0.15) }}><OrgDragon org={org} size={64} animated={false} /></span>}
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, paddingTop: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lime)' }}>{shortDate(q.quiz_date)}{q.quiz_time ? ` · ${formatTime(q.quiz_time)}` : ''}</span>
+                    <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{cleanTitle(q.title)}</span>
+                    {q.location && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.location}</span>}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
+        <div className="only-mobile" style={{ height: 90 }} />
       </div>
     </div>
   )
 }
 
+function Fact({ icon, label, value, sub }: { icon: ReactNode; label: string; value: ReactNode; sub?: string }) {
+  return (
+    <div style={{ display: 'flex', gap: 12, padding: 14, borderRadius: 16, background: 'rgba(17,19,46,0.75)', border: '1px solid var(--border-subtle)' }}>
+      <span aria-hidden="true" style={{ flex: 'none', width: 36, height: 36, borderRadius: 10, background: 'var(--lime-soft)', color: 'var(--lime)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>{label}</span>
+        <span className="display" style={{ display: 'block', fontSize: 17, fontWeight: 700, overflowWrap: 'anywhere' }}>{value}</span>
+        {sub && <span style={{ display: 'block', fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</span>}
+      </span>
+    </div>
+  )
+}
+
 function Description({ text }: { text: string }) {
-  // Split by single \n - Instagram caption uses single newlines for line breaks
+  // Instagram captions use single newlines for line breaks.
   const lines = text.split('\n')
   const paragraphs: string[][] = [[]]
   for (const line of lines) {
@@ -373,115 +325,25 @@ function Description({ text }: { text: string }) {
   }
   const blocks = paragraphs.filter(p => p.length > 0)
 
-  // Separate hashtag block (final paragraph of mostly hashtags)
+  // Separate a trailing block that is mostly hashtags.
   const last = blocks[blocks.length - 1]?.join(' ') ?? ''
   const hashtagCount = (last.match(/#\w+/g) ?? []).length
   const isLastHashtags = hashtagCount >= 3 && hashtagCount / Math.max(last.split(/\s+/).length, 1) > 0.5
-
   const contentBlocks = isLastHashtags ? blocks.slice(0, -1) : blocks
   const hashtagBlock = isLastHashtags ? blocks[blocks.length - 1] : null
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {contentBlocks.map((para, i) => (
-        <p
-          key={i}
-          style={{
-            fontSize: 13.5,
-            lineHeight: 1.7,
-            color: 'var(--text-secondary)',
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-          }}
-        >
+        <p key={i} style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', maxWidth: '68ch' }}>
           {para.join('\n')}
         </p>
       ))}
       {hashtagBlock && (
-        <div style={{
-          marginTop: 6,
-          paddingTop: 14,
-          borderTop: '0.5px solid var(--border-subtle)',
-          fontSize: 11.5,
-          color: 'var(--text-muted)',
-          lineHeight: 1.6,
-          wordBreak: 'break-word',
-        }}>
+        <p style={{ marginTop: 4, paddingTop: 14, borderTop: '1px solid var(--border-subtle)', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, overflowWrap: 'anywhere' }}>
           {hashtagBlock.join(' ')}
-        </div>
+        </p>
       )}
-    </div>
-  )
-}
-
-function InfoRow({
-  icon, label, value, sub, href, external, last,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  sub?: string
-  href?: string
-  external?: boolean
-  last?: boolean
-}) {
-  const valueEl = href ? (
-    <a
-      href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
-      style={{
-        fontSize: 13,
-        color: 'var(--accent-amber)',
-        textDecoration: 'none',
-        fontWeight: 500,
-      }}
-    >
-      {value}
-    </a>
-  ) : (
-    <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{value}</span>
-  )
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 12,
-      padding: '11px 12px',
-      borderBottom: last ? 'none' : '0.5px solid var(--border-subtle)',
-    }}>
-      <div style={{
-        width: 28,
-        height: 28,
-        borderRadius: 7,
-        background: 'rgba(255,255,255,0.03)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--accent-amber)',
-        flexShrink: 0,
-        marginTop: 1,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 10,
-          color: 'var(--text-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: 2,
-        }}>
-          {label}
-        </div>
-        {valueEl}
-        {sub && (
-          <div style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
-            {sub}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

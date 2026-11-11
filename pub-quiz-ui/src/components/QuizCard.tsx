@@ -1,259 +1,120 @@
 import { Link } from 'react-router-dom'
-import { Clock, Coins, Users, Calendar } from 'lucide-react'
-import { formatTime, formatPrice, teamSizeShort } from '../lib/utils'
+import { formatTime, formatPrice, teamSizeShort, shortDate, isToday, cleanTitle } from '../lib/utils'
+import { accentOf, tint } from '../lib/dragon'
 import type { Quiz } from '../types'
 import HeartButton from './HeartButton'
-
-const FALLBACK_GRADIENTS = [
-  'linear-gradient(135deg, #2A1F1F 0%, #3D2A1F 100%)',
-  'linear-gradient(135deg, #1F2A2F 0%, #1F3540 100%)',
-  'linear-gradient(135deg, #2A1F35 0%, #1F1F3D 100%)',
-  'linear-gradient(135deg, #1F2F22 0%, #1F4030 100%)',
-  'linear-gradient(135deg, #2F1F2A 0%, #401F35 100%)',
-  'linear-gradient(135deg, #2A2A1F 0%, #3D3520 100%)',
-]
-
-function formatDateBadge(dateStr: string) {
-  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00')
-  const weekday = d.toLocaleDateString('sr-Latn-RS', { weekday: 'short' })
-    .replace('.', '')
-    .replace(/^\w/, c => c.toUpperCase())
-  const day = d.getDate()
-  const month = d.toLocaleDateString('sr-Latn-RS', { month: 'short' }).replace('.', '')
-  return `${weekday} · ${day}. ${month}`
-}
-
-function cleanTitle(t: string) {
-  return t.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()
-}
-
-const badge: React.CSSProperties = {
-  position: 'absolute',
-  top: 7,
-  backdropFilter: 'blur(8px)',
-  background: 'rgba(11,11,16,0.85)',
-  border: '0.5px solid var(--border-strong)',
-  borderRadius: 5,
-  padding: '3px 6px',
-  fontSize: 9.5,
-  fontWeight: 500,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-}
+import { OrgBadge, OrgDragon } from './OrgBadge'
 
 interface Props {
   quiz: Quiz
-  compact?: boolean
+  /** Position in the grid, used to stagger the entrance animation. */
+  index?: number
+  /** Hide the organizer row, on an organizer's own page. */
+  hideOrg?: boolean
 }
 
-export default function QuizCard({ quiz, compact = false }: Props) {
-  const gradientIndex = quiz.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % FALLBACK_GRADIENTS.length
-  const gradient = FALLBACK_GRADIENTS[gradientIndex] ?? FALLBACK_GRADIENTS[0]
-  const teamSize = teamSizeShort(quiz.min_team_members, quiz.max_team_members)
-  const isCancelled = quiz.status === 'cancelled'
+const pill: React.CSSProperties = {
+  padding: '4px 9px',
+  borderRadius: 8,
+  background: 'rgba(169,173,214,0.1)',
+  color: 'var(--text-secondary)',
+  fontSize: 13,
+  whiteSpace: 'nowrap',
+}
+
+export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
+  const team = teamSizeShort(quiz.min_team_members, quiz.max_team_members)
+  const cancelled = quiz.status === 'cancelled'
+  const tonight = isToday(quiz.quiz_date) && !cancelled
+  const accent = accentOf(quiz.organization)
+  const title = cleanTitle(quiz.title)
 
   return (
     <Link
       to={`/kvizovi/${quiz.slug}`}
-      className="quiz-card"
+      className="quiz-card anim-up"
       style={{
-        display: 'block',
-        background: 'var(--bg-surface)',
-        border: '0.5px solid var(--border-subtle)',
-        borderRadius: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 18,
         overflow: 'hidden',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
         textDecoration: 'none',
+        color: 'var(--text-primary)',
+        animationDelay: `${Math.min(index, 12) * 0.06}s`,
       }}
     >
-      {/* Image */}
-      <div style={{
-        position: 'relative',
-        aspectRatio: compact ? '1/1' : '4/5',
-        overflow: 'hidden',
-        filter: isCancelled ? 'grayscale(0.85)' : undefined,
-      }}>
+      <div style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden', filter: cancelled ? 'grayscale(0.9) brightness(0.6)' : undefined }}>
         {quiz.cover_image_url ? (
-          <img
-            src={quiz.cover_image_url}
-            alt={quiz.title}
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+          <img className="quiz-card-img" src={quiz.cover_image_url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
-          // No artwork yet - organizers publish a quiz's picture a day or two
-          // ahead, while the schedule announces it weeks out. Rather than an
-          // empty rectangle, set the quiz name as a poster so the card looks
-          // deliberate; enrichment swaps in the real image once it exists.
-          <div style={{
-            width: '100%',
-            height: '100%',
-            background: gradient,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: compact ? 9 : 12,
-            position: 'relative',
+          // Organizers announce a quiz weeks ahead and post its artwork a day or
+          // two before. Until then the organizer's dragon stands in, so the card
+          // still looks deliberate.
+          <div className="quiz-card-img" style={{
+            width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+            background: `radial-gradient(circle at 50% 40%, ${tint(accent, 0.35)}, ${tint(accent, 0.06)} 70%), #0D0F2A`,
           }}>
-            {/* faint diagonal weave so the panel reads as designed, not empty */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage:
-                  'repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 9px)',
-              }}
-            />
-            {quiz.organization.logo_url ? (
-              <img
-                src={quiz.organization.logo_url}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                style={{
-                  width: compact ? 46 : 58,
-                  height: compact ? 46 : 58,
-                  objectFit: 'cover',
-                  borderRadius: '50%',
-                  opacity: 0.55,
-                  border: '0.5px solid rgba(255,255,255,0.12)',
-                  position: 'relative',
-                }}
-              />
-            ) : (
-              <span style={{
-                fontFamily: "'Space Grotesk', system-ui, sans-serif",
-                fontSize: compact ? 26 : 32,
-                fontWeight: 600,
-                color: 'rgba(237,234,227,0.22)',
-                position: 'relative',
-              }}>
-                {quiz.organization.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-            <span style={{
-              position: 'relative',
-              fontSize: compact ? 8.5 : 9.5,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'rgba(237,234,227,0.4)',
-            }}>
-              Najavljeno
-            </span>
+            <OrgDragon org={quiz.organization} size={130} animated={false} />
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--text-muted)' }}>NAJAVLJENO</span>
           </div>
         )}
-
         {quiz.quiz_date && (
           <span style={{
-            ...badge,
-            left: 7,
-            color: isCancelled ? 'var(--text-muted)' : 'var(--accent-amber)',
-            textDecoration: isCancelled ? 'line-through' : undefined,
+            position: 'absolute', left: 10, top: 10, padding: '6px 10px', borderRadius: 10,
+            background: 'rgba(7,8,24,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(182,242,62,0.3)',
+            fontSize: 13, fontWeight: 600, color: '#E9FFC2', textDecoration: cancelled ? 'line-through' : undefined,
           }}>
-            <Calendar size={9} />
-            {formatDateBadge(quiz.quiz_date)}
+            {shortDate(quiz.quiz_date)}
           </span>
         )}
-
-        {isCancelled && (
+        {tonight && (
           <span style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            right: 0,
-            transform: 'translateY(-50%) rotate(-8deg)',
-            textAlign: 'center',
-            background: 'rgba(220,38,38,0.92)',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            padding: '5px 0',
+            position: 'absolute', right: 10, top: 10, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 10,
+            background: 'var(--lime)', color: 'var(--on-lime)', fontSize: 12, fontWeight: 700,
+          }}>
+            <span className="live-dot dark" />VEČERAS
+          </span>
+        )}
+        {cancelled && (
+          <span style={{
+            position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%) rotate(-8deg)',
+            padding: '6px 14px', borderRadius: 10, background: 'var(--danger)', color: '#2A0A12', fontSize: 14, fontWeight: 700, letterSpacing: '0.06em',
           }}>
             OTKAZANO
           </span>
         )}
-
-        {!compact && (
-          <span className="card-org-tag" style={{ ...badge, right: 7, color: 'rgba(237,234,227,0.7)' }}>
-            {quiz.organization.name}
-          </span>
-        )}
-
-        <div style={{ position: 'absolute', bottom: 7, right: 7 }}>
-          <HeartButton
-            quizSlug={quiz.slug}
-            isFavorited={quiz.is_favorited ?? false}
-            size={14}
-          />
-        </div>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: compact ? '9px 10px 10px' : '11px 12px 12px' }}>
-        <h3 style={{
-          fontSize: compact ? 11.5 : 12.5,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: `0 0 ${compact ? 7 : 9}px`,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          textTransform: 'uppercase',
-          letterSpacing: '0.01em',
-          lineHeight: 1.25,
-          minHeight: compact ? undefined : '2.5em',
-        }}>
-          {cleanTitle(quiz.title)}
-        </h3>
-
-        {/* Meta row */}
-        <div style={{
-          display: 'flex',
-          gap: 10,
-          paddingTop: compact ? 7 : 8,
-          borderTop: '0.5px solid var(--border-subtle)',
-          fontSize: 10,
-          color: 'var(--text-secondary)',
-          marginBottom: compact ? 0 : 8,
-          flexWrap: 'wrap',
-        }}>
-          {quiz.quiz_time && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Clock size={10} strokeWidth={1.7} />
-              {formatTime(quiz.quiz_time)}
-            </span>
-          )}
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--accent-amber)' }}>
-            <Coins size={10} strokeWidth={1.7} />
-            {formatPrice(quiz.entry_fee)}
-          </span>
-          {teamSize && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Users size={10} strokeWidth={1.7} />
-              {teamSize}
-            </span>
-          )}
+      <div style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ minWidth: 0 }}>
+            {!hideOrg && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 5 }}>
+                <OrgBadge org={quiz.organization} size={22} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quiz.organization.name}</span>
+              </span>
+            )}
+            <h3 className="display" style={{
+              fontSize: 18, fontWeight: 700, lineHeight: 1.2, margin: 0,
+              overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              textDecoration: cancelled ? 'line-through' : undefined, color: cancelled ? 'var(--text-muted)' : undefined,
+            }}>
+              {title}
+            </h3>
+          </div>
+          <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={18} style={{ margin: '-4px -4px 0 0' }} />
         </div>
-
-        {/* Info (skipped in compact) */}
-        {!compact && (
-          <p style={{
-            fontSize: 10,
-            lineHeight: 1.5,
-            margin: 0,
-            color: quiz.description ? 'var(--text-secondary)' : 'var(--text-muted)',
-            fontStyle: quiz.description ? 'normal' : 'italic',
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}>
-            {quiz.description ?? 'Ne postoji info za ovaj kviz, pogledaj Instagram stranicu za više detalja.'}
-          </p>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {quiz.quiz_time && <span style={pill}>{formatTime(quiz.quiz_time)}</span>}
+          <span style={{ ...pill, background: 'rgba(182,242,62,0.12)', color: 'var(--lime)', fontWeight: 600 }}>{formatPrice(quiz.entry_fee)}</span>
+          {team && <span style={pill}>{team}</span>}
+        </div>
+        {(quiz.location || quiz.address) && (
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {quiz.location ?? quiz.address}
+          </span>
         )}
       </div>
     </Link>

@@ -62,6 +62,8 @@ SSH: deploy@157.245.74.186
 
 ```
 GET  /api/quizzes                filteri: ?search= &org= &date_from= &date_to= &page=
+                                 sort: ?sort=datum|blizu|cena|novo (blizu traži lat i lng)
+                                 udaljenost: ?lat= &lng= &radius= (km)
 GET  /api/quizzes/{slug}
 GET  /api/organizations
 GET  /api/organizations/{slug}
@@ -170,6 +172,8 @@ Triggerovanje:
 
 ### organizations
 - id (UUID), name, slug, instagram_handle, logo_url, description
+- dragon_color, dragon_prop, dragon_shirt - zmaj organizatora (vrednosti su imena,
+  boje su u pub-quiz-ui/src/lib/dragon.ts); logo na majici je logo_url
 - created_at, updated_at
 
 ### quizzes

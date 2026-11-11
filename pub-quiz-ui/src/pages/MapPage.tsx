@@ -1,395 +1,249 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
-import { CalendarRange, Locate } from 'lucide-react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { Locate, X } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import api, { fetchOrganizations } from '../api'
-import OrgChipsBar from '../components/OrgChipsBar'
-import CustomSelect from '../components/CustomSelect'
+import PinFlag from '../components/PinFlag'
+import { OrgBadge } from '../components/OrgBadge'
+import EmptyState from '../components/EmptyState'
 import type { Quiz } from '../types'
-import { formatDate, formatTime, formatPrice, kvizWord, lokacijaWord } from '../lib/utils'
+import { addDays, cleanTitle, endOfWeekIso, formatTime, kvizWord, relativeDay, todayIso, weekendIso } from '../lib/utils'
+import { useGeo } from '../lib/useGeo'
 import { useSeo } from '../lib/useSeo'
-
-// Fix default marker icons for Vite bundling
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-})
 
 interface MapQuiz extends Quiz {
   latitude: number
   longitude: number
 }
 
-type DateFilter = 'all' | 'today' | 'tomorrow' | 'weekend' | 'week'
-type RadiusFilter = 0 | 5 | 10 | 25 | 50
+type When = 'sve' | 'danas' | 'sutra' | 'vikend' | 'nedelja'
+const WHEN: { key: When; label: string }[] = [
+  { key: 'danas', label: 'Večeras' },
+  { key: 'sutra', label: 'Sutra' },
+  { key: 'vikend', label: 'Vikend' },
+  { key: 'nedelja', label: 'Ove nedelje' },
+  { key: 'sve', label: 'Sve' },
+]
+const RADII = [2, 5, 10, 25] as const
 
-/** Haversine distance in km */
-function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const R = 6371
-  const dLat = toRad(lat2 - lat1)
-  const dLon = toRad(lon2 - lon1)
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(a))
-}
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
-function computeDateRange(filter: DateFilter): { from?: string; to?: string } {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-
-  switch (filter) {
-    case 'today':
-      return { from: isoDate(today), to: isoDate(today) }
-    case 'tomorrow':
-      return { from: isoDate(tomorrow), to: isoDate(tomorrow) }
-    case 'weekend': {
-      const day = today.getDay() // 0=Sun, 6=Sat
-      const daysUntilSat = (6 - day + 7) % 7
-      const sat = new Date(today); sat.setDate(today.getDate() + daysUntilSat)
-      const sun = new Date(sat); sun.setDate(sat.getDate() + 1)
-      return { from: isoDate(sat), to: isoDate(sun) }
-    }
-    case 'week': {
-      // Monday-Sunday of current week
-      const day = today.getDay() // 0=Sun ... 6=Sat
-      const daysFromMon = (day + 6) % 7 // 0 if Mon, 6 if Sun
-      const mon = new Date(today); mon.setDate(today.getDate() - daysFromMon)
-      const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
-      return { from: isoDate(mon), to: isoDate(sun) }
-    }
-    default:
-      return {}
+function rangeFor(w: When): { from?: string; to?: string } {
+  const t = todayIso()
+  switch (w) {
+    case 'danas': return { from: t, to: t }
+    case 'sutra': return { from: addDays(t, 1), to: addDays(t, 1) }
+    case 'vikend': return weekendIso()
+    case 'nedelja': return { from: t, to: endOfWeekIso() }
+    default: return {}
   }
 }
 
-/** Fit map bounds to given points */
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 2 * 6371 * Math.asin(Math.sqrt(a))
+}
+
+function pinIcon(org: Quiz['organization'], count: number, selected: boolean) {
+  const html = renderToStaticMarkup(
+    <div className="dragon-pin-inner">
+      <PinFlag org={org} />
+      {count > 1 && <span className="dragon-pin-count">{count}</span>}
+    </div>,
+  )
+  return L.divIcon({ className: `dragon-pin${selected ? ' selected' : ''}`, html, iconSize: [70, 52], iconAnchor: [22, 50] })
+}
+
+const userIcon = L.divIcon({ className: 'user-location-marker', html: '<div class="user-location-dot"></div>', iconSize: [20, 20], iconAnchor: [10, 10] })
+
 function AutoFit({ points }: { points: [number, number][] }) {
   const map = useMap()
+  const key = points.map(p => p.join(',')).join(';')
   useEffect(() => {
     if (points.length === 0) return
-    if (points.length === 1) {
-      map.setView(points[0], 14)
-      return
-    }
-    const bounds = L.latLngBounds(points as L.LatLngExpression[])
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 })
-  }, [map, points])
+    if (points.length === 1) { map.setView(points[0], 14); return }
+    map.fitBounds(L.latLngBounds(points as L.LatLngExpression[]), { padding: [50, 50], maxZoom: 15 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, key])
+  return null
+}
+
+function FlyTo({ target }: { target: [number, number] | null }) {
+  const map = useMap()
+  useEffect(() => { if (target) map.flyTo(target, Math.max(map.getZoom(), 14), { duration: 0.6 }) }, [map, target])
   return null
 }
 
 export default function MapPage() {
-  const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [radius, setRadius] = useState<RadiusFilter>(0)
-  const [userLoc, setUserLoc] = useState<{ lat: number; lon: number } | null>(null)
-  const [locating, setLocating] = useState(false)
-  const [locError, setLocError] = useState<string | null>(null)
+  const [when, setWhen] = useState<When>('nedelja')
+  const [orgFilter, setOrgFilter] = useState<string[]>([])
+  const [radius, setRadius] = useState<number | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
+  const geo = useGeo()
 
-  const { data: orgs } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: fetchOrganizations,
-    staleTime: 5 * 60 * 1000,
+  useSeo({
+    title: 'Mapa kvizova',
+    description: 'Mapa pab kvizova u Srbiji. Pronađi kviz blizu sebe po datumu, organizatoru i udaljenosti.',
+    path: '/mapa',
   })
 
-  const dateRange = useMemo(() => computeDateRange(dateFilter), [dateFilter])
-
-  const { data: rawQuizzes, isLoading, isError } = useQuery({
-    queryKey: ['quizzes-map', selectedOrgs.join(','), dateFilter],
+  const { data: orgs } = useQuery({ queryKey: ['organizations'], queryFn: fetchOrganizations, staleTime: 5 * 60 * 1000 })
+  const range = rangeFor(when)
+  const { data: raw, isLoading, isError } = useQuery({
+    queryKey: ['quizzes-map', orgFilter.join(','), when],
     queryFn: async () => {
       const params: Record<string, string> = {}
-      if (selectedOrgs.length > 0) params.org = selectedOrgs.join(',')
-      if (dateRange.from) params.date_from = dateRange.from
-      if (dateRange.to) params.date_to = dateRange.to
+      if (orgFilter.length) params.org = orgFilter.join(',')
+      if (range.from) params.date_from = range.from
+      if (range.to) params.date_to = range.to
       const res = await api.get<{ data: MapQuiz[] }>('/quizzes/map', { params })
-      return res.data.data.map(q => ({
-        ...q,
-        latitude: Number(q.latitude),
-        longitude: Number(q.longitude),
-      }))
+      return res.data.data
+        .map(q => ({ ...q, latitude: Number(q.latitude), longitude: Number(q.longitude) }))
+        .filter(q => (q.quiz_date ?? '').slice(0, 10) >= todayIso())
     },
     staleTime: 60 * 1000,
   })
 
-  // Apply "near me" radius filter client-side
   const quizzes = useMemo(() => {
-    if (!rawQuizzes) return []
-    if (!userLoc || radius === 0) return rawQuizzes
-    return rawQuizzes.filter(q => distanceKm(userLoc.lat, userLoc.lon, q.latitude, q.longitude) <= radius)
-  }, [rawQuizzes, userLoc, radius])
+    const list = raw ?? []
+    if (!geo.pos || !radius) return list
+    return list.filter(q => distanceKm(geo.pos!.lat, geo.pos!.lng, q.latitude, q.longitude) <= radius)
+  }, [raw, geo.pos, radius])
 
-  // Group by rounded coord (~1m precision)
   const groups = useMemo(() => {
-    const map = new Map<string, MapQuiz[]>()
+    const m = new Map<string, MapQuiz[]>()
     for (const q of quizzes) {
-      const key = `${q.latitude.toFixed(5)},${q.longitude.toFixed(5)}`
-      const existing = map.get(key) ?? []
-      existing.push(q)
-      map.set(key, existing)
+      const k = `${q.latitude.toFixed(5)},${q.longitude.toFixed(5)}`
+      m.set(k, [...(m.get(k) ?? []), q])
     }
-    return Array.from(map.entries()).map(([key, list]) => {
-      const [lat, lon] = key.split(',').map(Number)
-      return { lat, lon, quizzes: list }
-    })
+    return [...m.values()].map(list => ({ lat: list[0].latitude, lng: list[0].longitude, quizzes: list }))
   }, [quizzes])
 
-  const points: [number, number][] = groups.map(g => [g.lat, g.lon])
-  const center: [number, number] = userLoc ? [userLoc.lat, userLoc.lon] : [44.8125, 20.4612]
+  const sel = quizzes.find(q => q.id === selected) ?? null
+  const points: [number, number][] = groups.map(g => [g.lat, g.lng])
+  const flyTarget: [number, number] | null = sel ? [sel.latitude, sel.longitude] : null
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) {
-      setLocError('Geolokacija nije podržana u ovom browseru.')
-      return
-    }
-    setLocating(true)
-    setLocError(null)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLoc({ lat: pos.coords.latitude, lon: pos.coords.longitude })
-        if (radius === 0) setRadius(25) // default to 25km when locating
-        setLocating(false)
-      },
-      (err) => {
-        setLocError(err.code === 1 ? 'Odbijena dozvola za lokaciju.' : 'Ne mogu da dobavim lokaciju.')
-        setLocating(false)
-      },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
-    )
-  }
-
-  useSeo({
-    title: 'Mapa kvizova',
-    description: 'Mapa pab kvizova u Srbiji. Pronadji kviz blizu sebe po datumu, organizatoru i udaljenosti.',
-    path: '/mapa',
-  })
+  const toggleOrg = (slug: string) => setOrgFilter(p => (p.includes(slug) ? p.filter(s => s !== slug) : [...p, slug]))
 
   return (
-    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
-      <h1 style={{
-        fontSize: 22,
-        fontWeight: 600,
-        color: 'var(--text-primary)',
-        margin: '0 0 16px',
-        letterSpacing: '-0.01em',
-      }}>
-        Mapa kvizova
-      </h1>
+    <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 'calc(100vh - 64px)' }}>
+      <aside className="map-aside" style={{ flex: '1 1 340px', padding: '22px 20px 120px', borderRight: '1px solid var(--border-subtle)', background: 'rgba(10,11,34,0.85)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h1 className="display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em' }}>Kvizovi na mapi</h1>
 
-      {/* Filter bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        flexWrap: 'wrap',
-        marginBottom: 14,
-      }}>
-        <div style={{ minWidth: 170 }}>
-          <CustomSelect
-            value={dateFilter === 'all' ? '' : dateFilter}
-            onChange={(v) => setDateFilter((v || 'all') as DateFilter)}
-            options={[
-              { value: 'today', label: 'Danas' },
-              { value: 'tomorrow', label: 'Sutra' },
-              { value: 'weekend', label: 'Vikend' },
-              { value: 'week', label: 'Ove nedelje' },
-            ]}
-            placeholder="Svi datumi"
-            icon={<CalendarRange size={13} style={{ opacity: 0.5, flexShrink: 0 }} />}
-          />
+        <div role="group" aria-label="Kada" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {WHEN.map(w => (
+            <button key={w.key} type="button" aria-pressed={when === w.key} onClick={() => { setWhen(w.key); setSelected(null) }} className="chip"
+              style={when === w.key ? { background: 'var(--lime)', color: 'var(--on-lime)', borderColor: 'var(--lime)', fontWeight: 600 } : undefined}>
+              {w.label}
+            </button>
+          ))}
         </div>
 
-        <button
-          onClick={handleLocate}
-          disabled={locating}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '9px 13px',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-            border: userLoc ? '0.5px solid rgba(233,184,74,0.4)' : '0.5px solid var(--border-default)',
-            background: userLoc ? 'var(--accent-amber-soft)' : 'rgba(255,255,255,0.03)',
-            color: userLoc ? 'var(--accent-amber)' : 'var(--text-secondary)',
-            opacity: locating ? 0.6 : 1,
-          }}
-        >
-          <Locate size={13} />
-          {userLoc ? 'Blizu mene' : locating ? 'Tražim...' : 'Blizu mene'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {geo.pos ? (
+            <>
+              {RADII.map(r => (
+                <button key={r} type="button" className={`chip${radius === r ? ' on' : ''}`} aria-pressed={radius === r} onClick={() => setRadius(radius === r ? null : r)}>do {r} km</button>
+              ))}
+              <button type="button" className="chip" onClick={() => { geo.clear(); setRadius(null) }} aria-label="Ukloni moju lokaciju"><X size={14} aria-hidden="true" /> Lokacija</button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => { geo.request(); setRadius(10) }} disabled={geo.status === 'asking'}>
+              <Locate size={16} aria-hidden="true" />{geo.status === 'asking' ? 'Tražim…' : 'Blizu mene'}
+            </button>
+          )}
+        </div>
+        {geo.message && <p style={{ fontSize: 13, color: '#FFB3C1' }}>{geo.message}</p>}
 
-        {userLoc && (
-          <div style={{ minWidth: 170 }}>
-            <CustomSelect
-              value={radius === 0 ? '' : String(radius)}
-              onChange={(v) => setRadius((v ? Number(v) : 0) as RadiusFilter)}
-              options={[
-                { value: '5', label: '≤ 5 km' },
-                { value: '10', label: '≤ 10 km' },
-                { value: '25', label: '≤ 25 km' },
-                { value: '50', label: '≤ 50 km' },
-              ]}
-              placeholder="Bilo koja razdaljina"
-            />
+        {orgs && orgs.length > 0 && (
+          <div role="group" aria-label="Organizatori" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {orgs.map(o => (
+              <button key={o.id} type="button" className={`chip with-badge${orgFilter.includes(o.slug) ? ' on' : ''}`} aria-pressed={orgFilter.includes(o.slug)} onClick={() => toggleOrg(o.slug)} style={{ fontSize: 13 }}>
+                <OrgBadge org={o} size={24} />{o.name}
+              </button>
+            ))}
           </div>
         )}
 
-        {userLoc && (
-          <button
-            onClick={() => { setUserLoc(null); setRadius(0); setLocError(null) }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              fontSize: 12,
-              cursor: 'pointer',
-              padding: '4px 6px',
-            }}
-          >
-            Očisti lokaciju
-          </button>
-        )}
-      </div>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          {isLoading ? 'Učitavanje…' : `${quizzes.length} ${kvizWord(quizzes.length)} na mapi`}
+        </span>
 
-      {locError && (
-        <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 10 }}>{locError}</div>
-      )}
-
-      {/* Org chips */}
-      <OrgChipsBar
-        orgs={orgs}
-        selected={selectedOrgs}
-        onToggle={(slug) =>
-          setSelectedOrgs(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
-        }
-        onClearAll={() => setSelectedOrgs([])}
-      />
-
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 12px' }}>
-        {isLoading
-          ? 'Učitavanje...'
-          : quizzes.length === 0
-            ? 'Nema kvizova za zadate filtere.'
-            : `${groups.length} ${lokacijaWord(groups.length)} · ${quizzes.length} ${kvizWord(quizzes.length)}`
-        }
-      </div>
-
-      {isError ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-          Greška pri učitavanju mape.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {quizzes.map(q => {
+            const on = q.id === selected
+            return (
+              <button key={q.id} type="button" onClick={() => setSelected(q.id)} aria-pressed={on} style={{
+                display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                background: on ? 'rgba(182,242,62,0.08)' : 'transparent', border: `1px solid ${on ? 'rgba(182,242,62,0.4)' : 'var(--border-subtle)'}`, color: 'var(--text-primary)',
+              }}>
+                <OrgBadge org={q.organization} size={40} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanTitle(q.title)}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {relativeDay(q.quiz_date)}{q.quiz_time ? ` ${formatTime(q.quiz_time)}` : ''} · {q.location ?? q.address}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
         </div>
-      ) : (
-        <div style={{
-          height: '70vh',
-          minHeight: 500,
-          borderRadius: 12,
-          overflow: 'hidden',
-          border: '0.5px solid var(--border-subtle)',
-        }}>
-          <MapContainer
-            center={center}
-            zoom={userLoc ? 12 : 11}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom
-          >
+        {!isLoading && quizzes.length === 0 && (
+          <EmptyState title="Nema kvizova na mapi" text="Promeni datum ili udaljenost. Na mapi su samo kvizovi čija je adresa pronađena." />
+        )}
+      </aside>
+
+      <section aria-label="Mapa" className="map-area" style={{ flex: '999 1 560px', position: 'relative' }}>
+        {isError ? (
+          <div style={{ padding: 60 }}><EmptyState title="Mapa nije učitana" text="Probaj ponovo za koji trenutak." /></div>
+        ) : (
+          <MapContainer center={geo.pos ? [geo.pos.lat, geo.pos.lng] : [44.8125, 20.4612]} zoom={12} style={{ position: 'absolute', inset: 0 }} scrollWheelZoom>
             <TileLayer
-              attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+              className="dark-tiles"
+              attribution='&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <AutoFit points={points} />
-
-            {/* User location marker */}
-            {userLoc && (
-              <Marker
-                position={[userLoc.lat, userLoc.lon]}
-                icon={L.divIcon({
-                  className: 'user-location-marker',
-                  html: '<div class="user-location-dot"></div>',
-                  iconSize: [20, 20],
-                  iconAnchor: [10, 10],
-                })}
-              >
-                <Popup>Ovde sam</Popup>
-              </Marker>
-            )}
-
-            {/* Grouped quiz pins */}
-            {groups.map((group, i) => (
-              <Marker
-                key={`${group.lat},${group.lon},${i}`}
-                position={[group.lat, group.lon]}
-                icon={L.divIcon({
-                  className: 'custom-map-marker',
-                  html: `<div class="marker-pin"></div>${group.quizzes.length > 1 ? `<div class="marker-badge">${group.quizzes.length}</div>` : ''}`,
-                  iconSize: [26, 32],
-                  iconAnchor: [13, 32],
-                  popupAnchor: [0, -30],
-                })}
-              >
-                <Popup maxWidth={280}>
-                  <div style={{ minWidth: 220 }}>
-                    <div style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      color: '#0B0B10',
-                      marginBottom: 8,
-                      paddingBottom: 6,
-                      borderBottom: '1px solid #E5E5E5',
-                    }}>
-                      {group.quizzes[0].location ?? group.quizzes[0].address}
-                      {group.quizzes.length > 1 && (
-                        <span style={{ fontWeight: 400, color: '#666', marginLeft: 6 }}>
-                          · {group.quizzes.length} {kvizWord(group.quizzes.length)}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
-                      {group.quizzes.map(q => (
-                        <Link
-                          key={q.id}
-                          to={`/kvizovi/${q.slug}`}
-                          style={{
-                            display: 'block',
-                            padding: 8,
-                            background: '#F5F5F5',
-                            borderRadius: 6,
-                            textDecoration: 'none',
-                            color: '#0B0B10',
-                          }}
-                        >
-                          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 3 }}>
-                            {q.title.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()}
-                          </div>
-                          <div style={{ fontSize: 11, color: '#555' }}>
-                            {formatDate(q.quiz_date)} · {q.quiz_time ? formatTime(q.quiz_time) + 'h' : ''} · {formatPrice(q.entry_fee)}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            <FlyTo target={flyTarget} />
+            {geo.pos && <Marker position={[geo.pos.lat, geo.pos.lng]} icon={userIcon} />}
+            {groups.map(g => {
+              const isSel = g.quizzes.some(q => q.id === selected)
+              return (
+                <Marker
+                  key={`${g.lat},${g.lng}`}
+                  position={[g.lat, g.lng]}
+                  icon={pinIcon(g.quizzes[0].organization, g.quizzes.length, isSel)}
+                  eventHandlers={{ click: () => setSelected(g.quizzes[0].id) }}
+                  title={g.quizzes.map(q => cleanTitle(q.title)).join(', ')}
+                />
+              )
+            })}
           </MapContainer>
-        </div>
-      )}
+        )}
+
+        {sel && (
+          <div className="anim-up" style={{
+            position: 'absolute', right: 16, bottom: 16, zIndex: 900, width: 'min(340px, calc(100% - 32px))', display: 'flex', gap: 14, padding: 12, borderRadius: 20,
+            background: 'rgba(13,15,42,0.96)', border: '1px solid rgba(182,242,62,0.35)', backdropFilter: 'blur(12px)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+          }}>
+            {sel.cover_image_url && <img src={sel.cover_image_url} alt="" style={{ width: 88, aspectRatio: '4 / 5', objectFit: 'cover', borderRadius: 12, flex: 'none' }} />}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {relativeDay(sel.quiz_date)}{sel.quiz_time ? ` · ${formatTime(sel.quiz_time)}` : ''}
+              </span>
+              <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.15 }}>{cleanTitle(sel.title)}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{sel.organization.name} · {sel.location ?? sel.address}</span>
+              <Link to={`/kvizovi/${sel.slug}`} style={{ marginTop: 'auto', fontSize: 14, fontWeight: 700, color: 'var(--lime)', textDecoration: 'none' }}>Detalji →</Link>
+            </div>
+            <button type="button" className="icon-btn" aria-label="Zatvori" onClick={() => setSelected(null)} style={{ width: 36, height: 36, flex: 'none' }}><X size={16} /></button>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

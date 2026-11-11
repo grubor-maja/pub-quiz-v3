@@ -17,6 +17,84 @@ export function formatDate(dateStr: string | null): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
+/** Local calendar date as YYYY-MM-DD, without the UTC shift toISOString adds. */
+export function isoLocal(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+export function todayIso(): string {
+  return isoLocal(new Date())
+}
+
+export function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`)
+  d.setDate(d.getDate() + days)
+  return isoLocal(d)
+}
+
+/** Sunday of the current week (the week runs Monday to Sunday). */
+export function endOfWeekIso(): string {
+  const d = new Date()
+  const daysToSunday = (7 - d.getDay()) % 7
+  d.setDate(d.getDate() + daysToSunday)
+  return isoLocal(d)
+}
+
+/** Saturday and Sunday of this weekend; on a Sunday, just that Sunday. */
+export function weekendIso(): { from: string; to: string } {
+  const d = new Date()
+  const day = d.getDay()
+  if (day === 0) return { from: isoLocal(d), to: isoLocal(d) }
+  const sat = new Date(d)
+  sat.setDate(d.getDate() + (6 - day))
+  const sun = new Date(sat)
+  sun.setDate(sat.getDate() + 1)
+  return { from: isoLocal(sat), to: isoLocal(sun) }
+}
+
+const WEEKDAYS = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub']
+const WEEKDAYS_LONG = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota']
+
+/** "Pet 13.11." */
+export function shortDate(dateStr: string | null): string {
+  if (!dateStr) return ''
+  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00`)
+  return `${WEEKDAYS[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`
+}
+
+/** "Utorak, 10.11." */
+export function longDate(dateStr: string | null): string {
+  if (!dateStr) return ''
+  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00`)
+  return `${WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}.`
+}
+
+/** "Utorak, 10. novembar" for today's heading. */
+export function todayHeading(): string {
+  const d = new Date()
+  const month = d.toLocaleDateString('sr-Latn-RS', { month: 'long' })
+  return `${WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()}. ${month}`
+}
+
+export function isToday(dateStr: string | null): boolean {
+  return !!dateStr && dateStr.slice(0, 10) === todayIso()
+}
+
+/** "Večeras", "Sutra" or the short date, for badges. */
+export function relativeDay(dateStr: string | null): string {
+  if (!dateStr) return ''
+  const iso = dateStr.slice(0, 10)
+  const today = todayIso()
+  if (iso === today) return 'Večeras'
+  if (iso === addDays(today, 1)) return 'Sutra'
+  return shortDate(iso)
+}
+
+export function cleanTitle(t: string): string {
+  return t.replace(/\s+\d{4}-\d{2}-\d{2}$/, '').trim()
+}
+
 export function formatTime(timeStr: string | null): string {
   if (!timeStr) return ''
   return timeStr.slice(0, 5)

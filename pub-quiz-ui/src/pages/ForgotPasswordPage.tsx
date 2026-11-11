@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { authForgotPassword } from '../api'
 import { authCardStyle, authErrorStyle, authFieldStyle, authLabelStyle, authSubmitStyle, authSuccessStyle } from './authStyles'
+import AuthLayout from '../components/AuthLayout'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -34,21 +35,13 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{ padding: '64px 24px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: '0 0 8px',
-          textAlign: 'center',
-        }}>
+    <AuthLayout>
+        <h1 className="display" style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>
           Zaboravljena lozinka
         </h1>
         <p style={{
-          fontSize: 12,
+          fontSize: 15,
           color: 'var(--text-muted)',
-          textAlign: 'center',
           margin: '0 0 22px',
           lineHeight: 1.5,
         }}>
@@ -89,7 +82,7 @@ export default function ForgotPasswordPage() {
 
           <div style={{
             marginTop: 6,
-            fontSize: 12,
+            fontSize: 14,
             textAlign: 'center',
             color: 'var(--text-muted)',
           }}>
@@ -98,7 +91,6 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
         </form>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

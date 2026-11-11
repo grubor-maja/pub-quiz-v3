@@ -1,15 +1,20 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Building2, ExternalLink } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { fetchOrganization } from '../api'
 import QuizCard from '../components/QuizCard'
 import SubscribeButton from '../components/SubscribeButton'
-import type { Quiz } from '../types'
-import { kvizWord } from '../lib/utils'
+import { OrgDragon } from '../components/OrgBadge'
+import EmptyState from '../components/EmptyState'
+import { Instagram } from '../components/icons'
+import { accentOf, tint } from '../lib/dragon'
+import { kvizWord, lokacijaWord, pluralSr, todayIso } from '../lib/utils'
 import { useSeo } from '../lib/useSeo'
 
 export default function OrganizationDetailPage() {
   const { slug } = useParams<{ slug: string }>()
+  const [tab, setTab] = useState<'predstojeci' | 'arhiva'>('predstojeci')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['organization', slug],
@@ -17,8 +22,7 @@ export default function OrganizationDetailPage() {
     enabled: !!slug,
   })
 
-  // Must sit above the early returns below, which is why it reads from data
-  // rather than from the org constant further down.
+  // Must sit above the early returns below, which is why it reads from data.
   useSeo({
     title: data?.organization?.name ?? '',
     description: data?.organization?.description
@@ -30,190 +34,103 @@ export default function OrganizationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 16,
-          marginBottom: 36,
-        }}>
-          <div style={{ width: 110, height: 110, borderRadius: '50%', background: 'var(--bg-surface)' }} />
-          <div style={{ width: 220, height: 22, background: 'var(--bg-surface)', borderRadius: 6 }} />
-          <div style={{ width: 140, height: 12, background: 'var(--bg-surface)', borderRadius: 4 }} />
+      <div className="page" style={{ paddingTop: 60 }}>
+        <div style={{ display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="skeleton" style={{ width: 280, height: 280, borderRadius: '50%' }} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="skeleton" style={{ height: 56, width: '60%', borderRadius: 12 }} />
+            <div className="skeleton" style={{ height: 18, width: '40%', borderRadius: 8 }} />
+          </div>
         </div>
       </div>
     )
   }
 
-  if (isError || !data || !data.organization) {
+  if (isError || !data?.organization) {
     return (
-      <div style={{ padding: '80px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Organizacija nije pronađena.
-        <Link to="/organizacije" style={{ display: 'block', marginTop: 12, color: 'var(--accent-amber)' }}>
-          Nazad
-        </Link>
+      <div className="page" style={{ paddingTop: 72 }}>
+        <EmptyState title="Ovog organizatora nismo našli" action={<Link to="/organizacije" className="btn btn-primary">Svi organizatori</Link>} />
       </div>
     )
   }
 
   const org = data.organization
-  const quizzes = data.quizzes ?? []
+  const accent = accentOf(org)
+  const today = todayIso()
+  const all = (data.quizzes ?? []).map(q => ({ ...q, organization: { ...org } }))
+  const upcoming = all.filter(q => (q.quiz_date ?? '').slice(0, 10) >= today).sort((a, b) => (a.quiz_date ?? '').localeCompare(b.quiz_date ?? ''))
+  const past = all.filter(q => (q.quiz_date ?? '').slice(0, 10) < today)
+  const venues = new Set(upcoming.map(q => q.location).filter(Boolean)).size
+  const shown = tab === 'predstojeci' ? upcoming : past
   const igUrl = org.instagram_handle ? `https://instagram.com/${org.instagram_handle}` : null
 
   return (
-    <div className="page-pad" style={{ maxWidth: 1180, margin: '0 auto' }}>
-      <Link
-        to="/organizacije"
-        className="back-rail"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 12,
-          color: 'var(--text-muted)',
-          textDecoration: 'none',
-          padding: '6px 8px',
-          borderRadius: 7,
-          marginBottom: 20,
-        }}
-      >
-        <ArrowLeft size={13} />
-        Sve organizacije
-      </Link>
-
-      {/* Hero - centered */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-        padding: '24px 16px 32px',
-        marginBottom: 28,
-      }}>
-        {/* Logo */}
-        <div style={{
-          width: 110,
-          height: 110,
-          borderRadius: '50%',
-          background: 'var(--bg-elevated)',
-          border: '0.5px solid var(--border-default)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          marginBottom: 16,
-        }}>
-          {org.logo_url ? (
-            <img
-              src={org.logo_url}
-              alt={org.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            <Building2 size={42} style={{ color: 'var(--accent-amber)', opacity: 0.7 }} />
-          )}
+    <div>
+      <section style={{ background: `linear-gradient(180deg, ${tint(accent, 0.16)}, ${tint(accent, 0)} 90%)`, borderBottom: `1px solid ${tint(accent, 0.15)}` }}>
+        <div className="page" style={{ paddingBottom: 40, paddingTop: 20 }}>
+          <Link to="/organizacije" className="back-rail" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginLeft: -12, borderRadius: 10, color: 'var(--text-tertiary)', textDecoration: 'none', fontSize: 14 }}>
+            <ArrowLeft size={16} aria-hidden="true" /> Svi organizatori
+          </Link>
+          <div style={{ display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+            <div className="anim-peek" style={{ position: 'relative', flex: 'none', width: 280, height: 290, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+              <svg className="spin-slow" aria-hidden="true" viewBox="0 0 280 280" width="280" height="280" style={{ position: 'absolute', top: 6, left: 0 }}>
+                <circle cx="140" cy="140" r="132" fill={tint(accent, 0.1)} stroke={tint(accent, 0.45)} strokeWidth="2" strokeDasharray="4 10" />
+              </svg>
+              <span style={{ position: 'relative' }}><OrgDragon org={org} size={250} /></span>
+            </div>
+            <div style={{ flex: '1 1 420px', minWidth: 0 }}>
+              <h1 className="display anim-up" style={{ fontSize: 'clamp(38px, 5vw, 64px)', fontWeight: 700, lineHeight: 0.98, letterSpacing: '-0.035em', marginBottom: 14 }}>{org.name}</h1>
+              {org.description && (
+                <p className="anim-up" style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--text-tertiary)', maxWidth: 560, marginBottom: 22, animationDelay: '0.08s' }}>{org.description}</p>
+              )}
+              <div className="anim-up" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', animationDelay: '0.14s' }}>
+                <SubscribeButton slug={org.slug} isSubscribed={org.is_subscribed ?? false} org={org} color={accent} />
+                {igUrl && (
+                  <a href={igUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                    <Instagram size={18} /> @{org.instagram_handle}
+                  </a>
+                )}
+              </div>
+              <div className="anim-up" style={{ display: 'flex', gap: 32, flexWrap: 'wrap', marginTop: 28, animationDelay: '0.2s' }}>
+                <Stat value={upcoming.length} label={pluralSr(upcoming.length, 'predstojeći kviz', 'predstojeća kviza', 'predstojećih kvizova')} color={accent} />
+                <Stat value={venues} label={lokacijaWord(venues)} color={accent} />
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Name */}
-        <h1 className="sg" style={{
-          fontSize: 26,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          letterSpacing: '-0.015em',
-          margin: '0 0 10px',
-        }}>
-          {org.name}
-        </h1>
-
-        {/* Subscribe + Instagram actions */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <SubscribeButton slug={org.slug} isSubscribed={org.is_subscribed ?? false} />
-          {igUrl && (
-            <a
-              href={igUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="org-ig-link"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                fontSize: 12.5,
-                color: 'var(--text-secondary)',
-                textDecoration: 'none',
-                padding: '7px 13px',
-                borderRadius: 8,
-                border: '0.5px solid var(--border-default)',
-                background: 'var(--bg-surface)',
-              }}
-            >
-              <ExternalLink size={13} />
-              @{org.instagram_handle}
-            </a>
-          )}
-        </div>
-
-        {/* Description */}
-        {org.description && (
-          <p style={{
-            fontSize: 13.5,
-            lineHeight: 1.65,
-            color: 'var(--text-secondary)',
-            maxWidth: 560,
-            margin: '0 auto',
-          }}>
-            {org.description}
-          </p>
-        )}
-      </div>
-
-      {/* Quizzes section */}
-      <div className="section-heading">
-        <h2 className="sg" style={{
-          fontSize: 16,
-          fontWeight: 500,
-          color: 'var(--text-primary)',
-          letterSpacing: '-0.01em',
-          margin: 0,
-        }}>
-          Kvizovi
-        </h2>
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {quizzes.length} {kvizWord(quizzes.length)}
-        </span>
-      </div>
-
-      {quizzes.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '50px 0',
-          fontSize: 13,
-          color: 'var(--text-muted)',
-        }}>
-          Nema objavljenih kvizova.
-        </div>
-      ) : (
-        <div className="card-grid">
-          {quizzes.map((quiz: Quiz) => (
-            <QuizCard
-              key={quiz.id}
-              quiz={{
-                ...quiz,
-                organization: {
-                  id: org.id,
-                  name: org.name,
-                  slug: org.slug,
-                  logo_url: org.logo_url,
-                  instagram_handle: org.instagram_handle,
-                  description: org.description,
-                },
-              }}
-            />
+      <div className="page" style={{ paddingTop: 32 }}>
+        <div role="tablist" aria-label="Kvizovi organizatora" style={{ display: 'inline-flex', gap: 6, padding: 5, borderRadius: 14, background: 'rgba(17,19,46,0.85)', border: '1px solid var(--border-subtle)', marginBottom: 24 }}>
+          {([['predstojeci', `Predstojeći (${upcoming.length})`], ['arhiva', `Arhiva (${past.length})`]] as const).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} style={{
+              minHeight: 40, padding: '0 18px', borderRadius: 10, border: 0, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              background: tab === k ? accent : 'transparent', color: tab === k ? 'var(--on-lime)' : 'var(--text-muted)',
+            }}>{label}</button>
           ))}
         </div>
-      )}
+
+        {shown.length === 0 ? (
+          <EmptyState
+            title={tab === 'predstojeci' ? 'Trenutno nema najavljenih kvizova' : 'Još nema prošlih kvizova'}
+            text={tab === 'predstojeci' ? `${org.name} još nije objavio sledeći kviz. Zaprati ih da ti se pojavi u tabu „Pratim“ čim ga objave.` : undefined}
+          />
+        ) : (
+          <div className="card-grid">
+            {shown.map((q, i) => <QuizCard key={q.id} quiz={q} index={i} hideOrg />)}
+          </div>
+        )}
+        <p style={{ marginTop: 18, fontSize: 14, color: 'var(--text-muted)' }}>{all.length} {kvizWord(all.length)} ukupno na sajtu</p>
+      </div>
     </div>
   )
 }
 
+function Stat({ value, label, color }: { value: number; label: string; color: string }) {
+  return (
+    <div>
+      <span className="display" style={{ display: 'block', fontSize: 30, fontWeight: 700, color }}>{value}</span>
+      <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{label}</span>
+    </div>
+  )
+}

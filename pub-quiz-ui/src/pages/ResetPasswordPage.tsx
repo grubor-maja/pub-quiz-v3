@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authResetPassword } from '../api'
 import { authCardStyle, authErrorStyle, authFieldStyle, authLabelStyle, authSubmitStyle } from './authStyles'
+import AuthLayout from '../components/AuthLayout'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -64,15 +65,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ padding: '64px 24px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: '0 0 22px',
-          textAlign: 'center',
-        }}>
+    <AuthLayout>
+        <h1 className="display" style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>
           Postavi novu lozinku
         </h1>
 
@@ -82,7 +76,7 @@ export default function ResetPasswordPage() {
               <div style={authErrorStyle}>Nevažeći link.</div>
               <div style={{
                 marginTop: 6,
-                fontSize: 12,
+                fontSize: 14,
                 textAlign: 'center',
                 color: 'var(--text-muted)',
               }}>
@@ -130,7 +124,7 @@ export default function ResetPasswordPage() {
 
               <div style={{
                 marginTop: 6,
-                fontSize: 12,
+                fontSize: 14,
                 textAlign: 'center',
                 color: 'var(--text-muted)',
               }}>
@@ -141,7 +135,6 @@ export default function ResetPasswordPage() {
             </form>
           )}
         </div>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

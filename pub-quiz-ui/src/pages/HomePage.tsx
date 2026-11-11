@@ -1,289 +1,153 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, X, Bell, Grid3x3, Archive } from 'lucide-react'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { Search } from 'lucide-react'
 import { fetchOrganizations, fetchQuizzes } from '../api'
 import { useAuth } from '../context/AuthContext'
 import QuizCard from '../components/QuizCard'
-import LoadingScreen from '../components/LoadingScreen'
-import Toolbar from '../components/Toolbar'
-import OrgChipsBar from '../components/OrgChipsBar'
-import type { QuizFilters } from '../types'
-import { rezultatWord } from '../lib/utils'
+import { SkeletonCard } from '../components/LoadingScreen'
+import EmptyState from '../components/EmptyState'
+import { OrgBadge } from '../components/OrgBadge'
+import HomeHero from '../components/home/HomeHero'
+import FilterBar from '../components/home/FilterBar'
+import { toApiFilters, useQuizFilters, type Tab } from '../lib/useQuizFilters'
+import { useGeo } from '../lib/useGeo'
+import { kvizWord } from '../lib/utils'
 import { useSeo } from '../lib/useSeo'
 
-type Tab = 'all' | 'subscribed' | 'archive'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'predstojeci', label: 'Predstojeći' },
+  { key: 'pratim', label: 'Pratim' },
+  { key: 'arhiva', label: 'Arhiva' },
+]
 
 export default function HomePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('all')
-  const [filters, setFilters] = useState<QuizFilters>({})
-  const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
-  const [searchInput, setSearchInput] = useState('')
+  const { state, update, clear } = useQuizFilters()
+  const { pos } = useGeo()
+  const listRef = useRef<HTMLDivElement>(null)
+  const [searchInput, setSearchInput] = useState(state.search)
 
-  // apply tab to filter
+  // Typing updates the address after a pause, not on every key.
   useEffect(() => {
-    setFilters(f => ({
-      ...f,
-      subscribed: tab === 'subscribed' ? true : undefined,
-      archive: tab === 'archive' ? true : undefined,
-      page: 1,
-    }))
-  }, [tab])
-
-  // reset tab if user logs out
-  useEffect(() => {
-    if (!user && tab === 'subscribed') setTab('all')
-  }, [user, tab])
-
-  const handleTabClick = (newTab: Tab) => {
-    if (newTab === 'subscribed' && !user) {
-      navigate('/login')
-      return
-    }
-    setTab(newTab)
-  }
-
-  // auto-apply search with debounce
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters(f => ({ ...f, search: searchInput || undefined, page: 1 }))
-    }, 400)
+    if (searchInput === state.search) return
+    const t = setTimeout(() => update({ search: searchInput }), 400)
     return () => clearTimeout(t)
-  }, [searchInput])
+  }, [searchInput, state.search, update])
 
-  // apply org selection to filters (CSV)
+  // The "Pratim" tab needs an account; a visitor who logs out falls back to all quizzes.
   useEffect(() => {
-    setFilters(f => ({ ...f, org: selectedOrgs.length > 0 ? selectedOrgs.join(',') : undefined, page: 1 }))
-  }, [selectedOrgs])
+    if (!user && state.tab === 'pratim') update({ tab: 'predstojeci' })
+  }, [user, state.tab, update])
 
-  const toggleOrg = (slug: string) => {
-    setSelectedOrgs(prev =>
-      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
-    )
-  }
+  const { data: orgs } = useQuery({ queryKey: ['organizations'], queryFn: fetchOrganizations, staleTime: 5 * 60 * 1000 })
 
-  const { data: orgs } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: fetchOrganizations,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const { data, isLoading, isError, isFetching } = useQuery({
+  const filters = toApiFilters(state, pos)
+  const query = useInfiniteQuery({
     queryKey: ['quizzes', filters],
-    queryFn: () => fetchQuizzes(filters),
+    queryFn: ({ pageParam }) => fetchQuizzes({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: last => (last.current_page < last.last_page ? last.current_page + 1 : undefined),
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   })
-
-  const hasFilters = filters.search || filters.org || filters.date_from || filters.date_to
-  const currentPage = filters.page ?? 1
+  const quizzes = query.data?.pages.flatMap(p => p.data) ?? []
+  const total = query.data?.pages[0]?.total
 
   useSeo({
-    title: tab === 'archive' ? 'Arhiva kvizova' : 'Pab kvizovi u Srbiji',
-    description: tab === 'archive'
-      ? 'Arhiva odrzanih pab kvizova u Srbiji. Pretrazi po organizatoru, lokaciji i datumu.'
-      : 'Agregator pab kvizova u Srbiji. Svi predstojeci kvizovi na jednom mestu: datum, vreme, lokacija, kotizacija i organizator.',
+    title: state.tab === 'arhiva' ? 'Arhiva kvizova' : 'Pab kvizovi u Srbiji',
+    description: state.tab === 'arhiva'
+      ? 'Arhiva održanih pab kvizova u Srbiji. Pretraži po organizatoru, lokaciji i datumu.'
+      : 'Agregator pab kvizova u Srbiji. Svi predstojeći kvizovi na jednom mestu: datum, vreme, lokacija, kotizacija i organizator.',
     path: '/',
   })
 
-  const clearFilters = () => {
-    setFilters({})
-    setSelectedOrgs([])
-    setSearchInput('')
+  const pickTab = (tab: Tab) => {
+    if (tab === 'pratim' && !user) {
+      navigate('/login')
+      return
+    }
+    update({ tab })
   }
 
+  const toggleOrg = (slug: string) =>
+    update({ org: state.org.includes(slug) ? state.org.filter(s => s !== slug) : [...state.org, slug] })
+
+  const heading = state.tab === 'arhiva' ? 'Prošli kvizovi' : state.tab === 'pratim' ? 'Organizatori koje pratim' : 'Predstojeći kvizovi'
+
   return (
-    <div className="page-pad">
-      {/* Tab bar */}
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        borderBottom: '0.5px solid var(--border-subtle)',
-        marginBottom: 20,
-      }}>
-        <TabBtn active={tab === 'all'} onClick={() => handleTabClick('all')}>
-          <Grid3x3 size={13} strokeWidth={1.8} />
-          Predstojeći
-        </TabBtn>
-        <TabBtn active={tab === 'subscribed'} onClick={() => handleTabClick('subscribed')}>
-          <Bell size={13} strokeWidth={1.8} />
-          Pratim
-        </TabBtn>
-        <TabBtn active={tab === 'archive'} onClick={() => handleTabClick('archive')}>
-          <Archive size={13} strokeWidth={1.8} />
-          Arhiva
-        </TabBtn>
+    <div className="page" style={{ paddingTop: 0 }}>
+      <HomeHero onShowAll={kada => {
+        update({ kada, od: '', do: '', tab: 'predstojeci' })
+        listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }} />
+
+      <div ref={listRef} style={{ scrollMarginTop: 80, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div role="tablist" aria-label="Prikaz kvizova" style={{ display: 'flex', gap: 6, padding: 5, borderRadius: 14, background: 'rgba(17,19,46,0.85)', border: '1px solid var(--border-subtle)' }}>
+          {TABS.map(t => {
+            const on = state.tab === t.key
+            return (
+              <button key={t.key} type="button" role="tab" aria-selected={on} onClick={() => pickTab(t.key)} style={{
+                minHeight: 40, padding: '0 18px', borderRadius: 10, border: 0, fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                background: on ? 'var(--lime)' : 'transparent', color: on ? 'var(--on-lime)' : 'var(--text-muted)',
+              }}>
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+        <label className="field" style={{ flex: '0 1 380px', minWidth: 0 }}>
+          <Search size={18} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+          <span className="sr-only">Pretraži kvizove</span>
+          <input type="search" placeholder="Pretraži kvizove, lokale…" value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+        </label>
       </div>
 
-      <Toolbar
-        searchInput={searchInput}
-        onSearchChange={setSearchInput}
-        initialDateFrom={filters.date_from ?? ''}
-        initialDateTo={filters.date_to ?? ''}
-        onApplyFilters={(dateFrom, dateTo) =>
-          setFilters(f => ({
-            ...f,
-            date_from: dateFrom || undefined,
-            date_to: dateTo || undefined,
-            page: 1,
-          }))
-        }
-      />
-
-      {/* Org chips (multi-select filter) - hidden on subscribed tab */}
-      {tab !== 'subscribed' && (
-        <OrgChipsBar
-          orgs={orgs}
-          selected={selectedOrgs}
-          onToggle={toggleOrg}
-          onClearAll={() => setSelectedOrgs([])}
-        />
+      {state.tab !== 'pratim' && orgs && orgs.length > 0 && (
+        <div className="only-desktop" role="group" aria-label="Organizatori" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {orgs.map(o => {
+            const on = state.org.includes(o.slug)
+            return (
+              <button key={o.id} type="button" className={`chip with-badge${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleOrg(o.slug)}>
+                <OrgBadge org={o} size={28} />{o.name}
+              </button>
+            )
+          })}
+        </div>
       )}
 
-      {/* Section heading */}
+      <FilterBar state={state} update={update} clear={() => { clear(); setSearchInput('') }} orgs={orgs} total={total} />
+
       <div className="section-heading">
-        <h2 className="sg" style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
-          {tab === 'archive' ? 'Prošli kvizovi' : tab === 'subscribed' ? 'Kvizovi organizacija koje pratim' : 'Predstojeći kvizovi'}
-        </h2>
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-          {data ? `${data.total} ${rezultatWord(data.total)} · sortirano po datumu` : ''}
-          {hasFilters && (
-            <button
-              onClick={clearFilters}
-              style={{
-                marginLeft: 10,
-                fontSize: 11,
-                color: 'var(--text-muted)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              <X size={10} /> očisti
-            </button>
-          )}
-        </span>
+        <h2 className="display" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>{heading}</h2>
+        {total !== undefined && <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{total} {kvizWord(total)}</span>}
       </div>
 
-      {/* Content */}
-      {isLoading ? (
-        <LoadingScreen />
-      ) : isError ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          Greška pri učitavanju. Pokušajte ponovo.
-        </div>
-      ) : data?.data.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', fontSize: 13, color: 'var(--text-muted)' }}>
-          {tab === 'subscribed'
-            ? 'Ne pratite nijednu organizaciju. Klikni "Zaprati" na stranici organizacije.'
-            : tab === 'archive'
-              ? 'Nema prošlih kvizova za zadate filtere.'
-              : 'Nema kvizova za zadate filtere.'}
-        </div>
+      {query.isLoading ? (
+        <div className="card-grid">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+      ) : query.isError ? (
+        <EmptyState title="Nešto nije u redu" text="Kvizove nismo uspeli da učitamo. Probaj ponovo za koji trenutak." action={<button type="button" className="btn btn-secondary" onClick={() => query.refetch()}>Probaj ponovo</button>} />
+      ) : quizzes.length === 0 ? (
+        state.tab === 'pratim' ? (
+          <EmptyState title="Ne pratiš nijednog organizatora" text="Zaprati organizatore i ovde ćeš videti samo njihove kvizove." action={<button type="button" className="btn btn-primary" onClick={() => navigate('/organizacije')}>Upoznaj organizatore</button>} />
+        ) : (
+          <EmptyState title="Zmaj nije našao ništa" text="Nema kvizova za ove filtere." action={<button type="button" className="btn btn-secondary" onClick={() => { clear(); setSearchInput('') }}>Očisti filtere</button>} />
+        )
       ) : (
-        <div className={isFetching ? 'is-fetching' : undefined}>
+        <div className={query.isFetching && !query.isFetchingNextPage ? 'is-fetching' : undefined}>
           <div className="card-grid">
-            {data?.data.map(quiz => (
-              <QuizCard key={quiz.id} quiz={quiz} />
-            ))}
+            {quizzes.map((q, i) => <QuizCard key={q.id} quiz={q} index={i % 20} />)}
           </div>
-
-          {data && data.last_page > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 40, flexWrap: 'wrap' }}>
-              <PaginationBtn
-                onClick={() => setFilters(f => ({ ...f, page: currentPage - 1 }))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft size={14} />
-              </PaginationBtn>
-
-              {Array.from({ length: data.last_page }, (_, i) => i + 1).map(page => (
-                <PaginationBtn
-                  key={page}
-                  onClick={() => setFilters(f => ({ ...f, page }))}
-                  active={page === currentPage}
-                >
-                  {page}
-                </PaginationBtn>
-              ))}
-
-              <PaginationBtn
-                onClick={() => setFilters(f => ({ ...f, page: currentPage + 1 }))}
-                disabled={currentPage === data.last_page}
-              >
-                <ChevronRight size={14} />
-              </PaginationBtn>
+          {query.hasNextPage && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
+              <button type="button" className="btn btn-secondary" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>
+                {query.isFetchingNextPage ? 'Učitavam…' : 'Učitaj još'}
+              </button>
             </div>
           )}
         </div>
       )}
     </div>
-  )
-}
-
-function TabBtn({ active, onClick, children }: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        padding: '10px 14px',
-        marginBottom: -1,
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: 13,
-        fontWeight: active ? 600 : 500,
-        color: active ? 'var(--text-primary)' : 'var(--text-muted)',
-        borderBottom: active ? '2px solid var(--accent-amber)' : '2px solid transparent',
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-function PaginationBtn({
-  children, onClick, disabled, active,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  disabled?: boolean
-  active?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: 7,
-        border: '0.5px solid var(--border-default)',
-        fontSize: 13,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.3 : 1,
-        background: active ? 'var(--accent-amber)' : 'rgba(255,255,255,0.03)',
-        color: active ? '#0B0B10' : 'var(--text-secondary)',
-        fontWeight: active ? 600 : 400,
-        boxShadow: active ? '0 0 16px rgba(233,184,74,0.25)' : 'none',
-      }}
-    >
-      {children}
-    </button>
   )
 }

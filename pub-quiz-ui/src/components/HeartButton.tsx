@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { useState, type MouseEvent } from 'react'
 import { addFavorite, removeFavorite } from '../api'
 import { useAuth } from '../context/AuthContext'
+import type { InfiniteData } from '@tanstack/react-query'
 import type { PaginatedResponse, Quiz } from '../types'
+
+type QuizList = PaginatedResponse<Quiz> | InfiniteData<PaginatedResponse<Quiz>>
 
 interface HeartButtonProps {
   quizSlug: string
@@ -41,17 +44,19 @@ export default function HeartButton({
       await queryClient.cancelQueries({ queryKey: ['quiz', quizSlug] })
       await queryClient.cancelQueries({ queryKey: ['favorites'] })
 
-      const prevQuizzesData = queryClient.getQueriesData<PaginatedResponse<Quiz>>({ queryKey: ['quizzes'] })
+      const prevQuizzesData = queryClient.getQueriesData<QuizList>({ queryKey: ['quizzes'] })
       const prevQuiz = queryClient.getQueryData<Quiz>(['quiz', quizSlug])
       const prevFavorites = queryClient.getQueryData<Quiz[]>(['favorites'])
 
-      // Optimistically update paginated lists
-      queryClient.setQueriesData<PaginatedResponse<Quiz>>({ queryKey: ['quizzes'] }, (old) => {
+      // Optimistically update the lists: a single page, or the pages "Učitaj još" loaded.
+      const mark = (page: PaginatedResponse<Quiz>) => ({
+        ...page,
+        data: page.data.map((q) => (q.slug === quizSlug ? { ...q, is_favorited: nowFav } : q)),
+      })
+      queryClient.setQueriesData<QuizList>({ queryKey: ['quizzes'] }, (old) => {
         if (!old) return old
-        return {
-          ...old,
-          data: old.data.map((q) => (q.slug === quizSlug ? { ...q, is_favorited: nowFav } : q)),
-        }
+        if ('pages' in old) return { ...old, pages: old.pages.map(mark) }
+        return mark(old)
       })
 
       // Optimistically update single quiz
@@ -103,35 +108,38 @@ export default function HeartButton({
     mutation.mutate(!isFavorited)
   }
 
-  const btnSize = size + 16
+  const btnSize = Math.max(size + 20, 40)
 
   return (
     <button
+      type="button"
       onClick={handleClick}
-      aria-label={isFavorited ? 'Ukloni iz favorita' : 'Dodaj u favorite'}
-      title={isFavorited ? 'Ukloni iz favorita' : 'Dodaj u favorite'}
+      aria-pressed={isFavorited}
+      aria-label={isFavorited ? 'Ukloni iz omiljenih' : 'Sačuvaj u omiljene'}
+      title={isFavorited ? 'Ukloni iz omiljenih' : 'Sačuvaj u omiljene'}
       style={{
         width: btnSize,
         height: btnSize,
-        borderRadius: '50%',
-        border: '0.5px solid var(--border-strong)',
-        background: 'rgba(11,11,16,0.75)',
+        borderRadius: 12,
+        border: '1px solid var(--border-default)',
+        background: 'rgba(7,8,24,0.7)',
         backdropFilter: 'blur(8px)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        color: isFavorited ? 'var(--accent-amber)' : 'rgba(237,234,227,0.85)',
-        transition: 'transform 180ms ease, color 180ms ease, background 180ms ease',
+        color: isFavorited ? 'var(--lime)' : 'var(--text-tertiary)',
         transform: popping ? 'scale(1.25)' : 'scale(1)',
         padding: 0,
+        flex: 'none',
         ...style,
       }}
     >
       <Heart
         size={size}
-        strokeWidth={1.8}
-        fill={isFavorited ? 'var(--accent-amber)' : 'none'}
+        strokeWidth={2}
+        fill={isFavorited ? 'var(--lime)' : 'none'}
+        aria-hidden="true"
       />
     </button>
   )

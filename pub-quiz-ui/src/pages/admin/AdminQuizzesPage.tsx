@@ -10,7 +10,7 @@ import { useSeo } from '../../lib/useSeo'
 import {
   btnPrimary, btnGhost, btnGhostWide, rowStyle, emptyStyle,
   noticeStyle, overlayStyle, modalStyle, gridStyle,
-} from './AdminOrganizationsPage'
+} from './adminStyles'
 
 type Draft = Partial<Quiz> & { organization_id?: string }
 

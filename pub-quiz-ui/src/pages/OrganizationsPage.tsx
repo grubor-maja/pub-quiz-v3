@@ -1,12 +1,18 @@
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Building2, AtSign, ChevronRight } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { fetchOrganizations } from '../api'
 import type { Organization } from '../types'
 import { kvizWord } from '../lib/utils'
+import { accentOf, tint } from '../lib/dragon'
 import { useSeo } from '../lib/useSeo'
+import { OrgDragon } from '../components/OrgBadge'
+import SubscribeButton from '../components/SubscribeButton'
+import EmptyState from '../components/EmptyState'
 
 export default function OrganizationsPage() {
+  const [search, setSearch] = useState('')
   const { data: orgs, isLoading } = useQuery({
     queryKey: ['organizations'],
     queryFn: fetchOrganizations,
@@ -14,157 +20,70 @@ export default function OrganizationsPage() {
   })
 
   useSeo({
-    title: 'Organizacije',
+    title: 'Organizatori',
     description: 'Organizatori pab kvizova u Srbiji. Pregledaj njihove kvizove, termine i lokacije.',
     path: '/organizacije',
   })
 
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return q ? orgs?.filter(o => o.name.toLowerCase().includes(q) || o.instagram_handle?.toLowerCase().includes(q)) : orgs
+  }, [orgs, search])
+
   return (
-    <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ marginBottom: 28, textAlign: 'center' }}>
-        <h1 className="sg" style={{
-          fontSize: 26,
-          fontWeight: 600,
-          letterSpacing: '-0.015em',
-          color: 'var(--text-primary)',
-          margin: '0 0 6px',
-        }}>
-          Organizacije
-        </h1>
-        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>
-          Organizatori pub kvizova u Srbiji
-        </p>
+    <div className="page">
+      <div className="anim-up" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', margin: '20px 0 36px' }}>
+        <div>
+          <h1 className="display" style={{ fontSize: 'clamp(36px, 4.5vw, 56px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1, marginBottom: 10 }}>
+            Upoznaj <span style={{ color: 'var(--lime)' }}>organizatore</span>
+          </h1>
+          <p style={{ fontSize: 17, color: 'var(--text-muted)', maxWidth: 520 }}>
+            Zaprati one koji ti se sviđaju i njihove kvizove imaš na jednom mestu, u tabu „Pratim“.
+          </p>
+        </div>
+        <label className="field" style={{ flex: '0 1 340px' }}>
+          <Search size={18} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+          <span className="sr-only">Pretraži organizatore</span>
+          <input type="search" placeholder="Pretraži organizatore" value={search} onChange={e => setSearch(e.target.value)} />
+        </label>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-        gap: 14,
-      }}>
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => <OrgCardSkeleton key={i} />)
-          : orgs?.map(org => <OrgCard key={org.id} org={org} />)
-        }
-      </div>
+      {isLoading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 22 }}>
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 380, borderRadius: 26 }} />)}
+        </div>
+      ) : !shown || shown.length === 0 ? (
+        <EmptyState title="Nema takvog organizatora" text="Probaj drugi naziv." />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 22 }}>
+          {shown.map((o, i) => <OrgCard key={o.id} org={o} index={i} />)}
+        </div>
+      )}
     </div>
   )
 }
 
-function OrgCard({ org }: { org: Organization }) {
+function OrgCard({ org, index }: { org: Organization; index: number }) {
+  const accent = accentOf(org)
+  const count = org.published_quizzes_count ?? 0
+
   return (
-    <Link
-      to={`/organizacije/${org.slug}`}
-      className="org-card"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        background: 'var(--bg-surface)',
-        border: '0.5px solid var(--border-subtle)',
-        borderRadius: 14,
-        padding: '22px 18px 18px',
-        textDecoration: 'none',
-        position: 'relative',
-        textAlign: 'center',
-      }}
-    >
-      {/* Logo */}
-      <div style={{
-        width: 72,
-        height: 72,
-        borderRadius: '50%',
-        background: 'var(--bg-elevated)',
-        border: '0.5px solid var(--border-default)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        marginBottom: 12,
-        flexShrink: 0,
-      }}>
-        {org.logo_url ? (
-          <img
-            src={org.logo_url}
-            alt={org.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <Building2 size={28} style={{ color: 'var(--accent-amber)', opacity: 0.7 }} />
-        )}
-      </div>
-
-      {/* Name */}
-      <h3 style={{
-        fontSize: 14,
-        fontWeight: 500,
-        color: 'var(--text-primary)',
-        margin: '0 0 4px',
-        letterSpacing: '-0.005em',
-      }}>
-        {org.name}
-      </h3>
-
-      {/* IG handle */}
-      {org.instagram_handle && (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 3,
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          marginBottom: 12,
-        }}>
-          <AtSign size={10} />
-          {org.instagram_handle}
-        </div>
-      )}
-
-      {/* Quiz count badge */}
-      {org.published_quizzes_count !== undefined && (
-        <div style={{
-          fontSize: 11,
-          padding: '4px 10px',
-          borderRadius: 6,
-          background: 'var(--accent-amber-soft)',
-          color: 'var(--accent-amber)',
-          border: '0.5px solid rgba(233,184,74,0.2)',
-          marginTop: 'auto',
-        }}>
-          {org.published_quizzes_count} {kvizWord(org.published_quizzes_count)}
-        </div>
-      )}
-
-      {/* Chevron decoration */}
-      <ChevronRight
-        size={13}
-        style={{
-          position: 'absolute',
-          top: 14,
-          right: 14,
-          color: 'var(--text-muted)',
-          opacity: 0.5,
-        }}
-      />
-    </Link>
-  )
-}
-
-function OrgCardSkeleton() {
-  return (
-    <div style={{
-      background: 'var(--bg-surface)',
-      border: '0.5px solid var(--border-subtle)',
-      borderRadius: 14,
-      padding: '22px 18px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 10,
+    <article className="anim-up lift" style={{
+      position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+      padding: '22px 20px', borderRadius: 26, background: tint(accent, 0.07), border: `1px solid ${tint(accent, 0.22)}`,
+      animationDelay: `${Math.min(index, 10) * 0.08}s`,
     }}>
-      <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--bg-elevated)' }} />
-      <div style={{ width: '60%', height: 13, background: 'var(--bg-elevated)', borderRadius: 4 }} />
-      <div style={{ width: '40%', height: 10, background: 'var(--bg-elevated)', borderRadius: 4 }} />
-    </div>
+      <Link to={`/organizacije/${org.slug}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textDecoration: 'none', color: 'var(--text-primary)' }}>
+        <span style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          <span aria-hidden="true" style={{ position: 'absolute', top: 14, width: 190, height: 190, borderRadius: '50%', background: tint(accent, 0.14) }} />
+          <span style={{ position: 'relative' }}><OrgDragon org={org} size={210} /></span>
+        </span>
+        <span className="display" style={{ marginTop: 8, fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>{org.name}</span>
+        <span style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>{count} {kvizWord(count)} na sajtu</span>
+      </Link>
+      <div style={{ marginTop: 16 }}>
+        <SubscribeButton slug={org.slug} isSubscribed={org.is_subscribed ?? false} org={org} color={accent} />
+      </div>
+    </article>
   )
 }
-

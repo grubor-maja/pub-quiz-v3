@@ -5,6 +5,9 @@ export interface Organization {
   instagram_handle: string | null
   logo_url: string | null
   description: string | null
+  dragon_color?: string | null
+  dragon_prop?: string | null
+  dragon_shirt?: string | null
   published_quizzes_count?: number
   is_subscribed?: boolean
   created_at: string
@@ -28,7 +31,11 @@ export interface Quiz {
   cover_image_url: string | null
   instagram_post_url: string | null
   status: 'published' | 'draft' | 'completed' | 'cancelled'
-  organization: Pick<Organization, 'id' | 'name' | 'slug' | 'logo_url' | 'instagram_handle' | 'description'>
+  latitude?: number | string | null
+  longitude?: number | string | null
+  /** Present when the list was asked for distances (lat and lng sent). */
+  distance_km?: number | string | null
+  organization: Pick<Organization, 'id' | 'name' | 'slug' | 'logo_url' | 'instagram_handle' | 'description' | 'dragon_color' | 'dragon_prop' | 'dragon_shirt'>
   is_favorited?: boolean
   created_at: string
   updated_at: string
@@ -44,6 +51,8 @@ export interface PaginatedResponse<T> {
   to: number
 }
 
+export type QuizSort = 'datum' | 'blizu' | 'cena' | 'novo'
+
 export interface QuizFilters {
   search?: string
   org?: string
@@ -52,6 +61,10 @@ export interface QuizFilters {
   page?: number
   subscribed?: boolean
   archive?: boolean
+  sort?: QuizSort
+  lat?: number
+  lng?: number
+  radius?: number
 }
 
 export interface User {

@@ -2,20 +2,20 @@ import type { ReactNode } from 'react'
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 10,
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: 'var(--text-muted)',
-  marginBottom: 5,
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--text-tertiary)',
+  marginBottom: 6,
 }
 
 export const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255,255,255,0.025)',
-  border: '0.5px solid var(--border-default)',
-  borderRadius: 8,
-  padding: '9px 11px',
-  fontSize: 13,
+  minHeight: 44,
+  background: '#070818',
+  border: '1px solid var(--border-default)',
+  borderRadius: 12,
+  padding: '10px 12px',
+  fontSize: 15,
   color: 'var(--text-primary)',
   fontFamily: 'inherit',
   outline: 'none',
@@ -35,12 +35,12 @@ export default function Field({ label, children, hint, error }: Props) {
       <span style={labelStyle}>{label}</span>
       {children}
       {hint && !error && (
-        <span style={{ display: 'block', fontSize: 10.5, color: 'var(--text-muted)', marginTop: 4 }}>
+        <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-muted)', marginTop: 5 }}>
           {hint}
         </span>
       )}
       {error && (
-        <span style={{ display: 'block', fontSize: 10.5, color: '#f87171', marginTop: 4 }}>
+        <span style={{ display: 'block', fontSize: 12.5, color: '#FFB3C1', marginTop: 5 }}>
           {error}
         </span>
       )}

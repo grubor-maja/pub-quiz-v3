@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authCardStyle, authErrorStyle, authFieldStyle, authLabelStyle, authSubmitStyle } from './authStyles'
+import AuthLayout from '../components/AuthLayout'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -62,17 +63,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ padding: '64px 24px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: '0 0 22px',
-          textAlign: 'center',
-        }}>
-          Registracija
-        </h1>
+    <AuthLayout mode="register">
+        <h1 className="sr-only">Registracija</h1>
 
         <form onSubmit={handleSubmit} style={authCardStyle}>
           <label style={authLabelStyle}>
@@ -136,7 +128,7 @@ export default function RegisterPage() {
 
           <div style={{
             marginTop: 6,
-            fontSize: 12,
+            fontSize: 14,
             textAlign: 'center',
             color: 'var(--text-muted)',
           }}>
@@ -146,7 +138,6 @@ export default function RegisterPage() {
             </Link>
           </div>
         </form>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

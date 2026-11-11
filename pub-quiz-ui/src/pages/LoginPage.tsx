@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authFieldStyle, authCardStyle, authSubmitStyle, authLabelStyle, authErrorStyle, authSuccessStyle } from './authStyles'
+import AuthLayout from '../components/AuthLayout'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -43,17 +44,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ padding: '64px 24px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: '0 0 22px',
-          textAlign: 'center',
-        }}>
-          Prijava
-        </h1>
+    <AuthLayout mode="login">
+        <h1 className="sr-only">Prijava</h1>
 
         <form onSubmit={handleSubmit} style={authCardStyle}>
           {successMessage && (
@@ -100,7 +92,7 @@ export default function LoginPage() {
             flexDirection: 'column',
             gap: 6,
             marginTop: 6,
-            fontSize: 12,
+            fontSize: 14,
             textAlign: 'center',
           }}>
             <Link to="/forgot-password" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
@@ -114,7 +106,6 @@ export default function LoginPage() {
             </div>
           </div>
         </form>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }

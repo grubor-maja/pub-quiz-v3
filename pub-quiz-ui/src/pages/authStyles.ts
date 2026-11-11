@@ -1,24 +1,21 @@
 import type { CSSProperties } from 'react'
 
 export const authCardStyle: CSSProperties = {
-  background: 'var(--bg-surface)',
-  border: '0.5px solid var(--border-subtle)',
-  borderRadius: 12,
-  padding: 28,
   display: 'flex',
   flexDirection: 'column',
-  gap: 14,
+  gap: 16,
 }
 
 export const authFieldStyle: CSSProperties = {
   width: '100%',
-  padding: '11px 12px',
-  background: 'rgba(255,255,255,0.03)',
+  minHeight: 50,
+  padding: '0 14px',
+  background: 'rgba(7,8,24,0.7)',
   border: '1px solid var(--border-default)',
-  borderRadius: 8,
+  borderRadius: 12,
   color: 'var(--text-primary)',
-  fontSize: 13,
-  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+  fontSize: 16,
+  fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',
 }
@@ -27,38 +24,38 @@ export const authLabelStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 6,
-  fontSize: 11,
-  color: 'var(--text-muted)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  fontWeight: 500,
+  fontSize: 14,
+  color: 'var(--text-secondary)',
+  fontWeight: 600,
 }
 
 export const authSubmitStyle: CSSProperties = {
-  height: 45,
-  borderRadius: 10,
-  fontSize: 13,
+  minHeight: 52,
+  borderRadius: 14,
+  border: 0,
+  fontSize: 16,
   fontWeight: 700,
+  fontFamily: 'inherit',
   cursor: 'pointer',
   marginTop: 4,
 }
 
 export const authErrorStyle: CSSProperties = {
-  color: '#ef4444',
-  fontSize: 12,
-  padding: '8px 10px',
-  background: 'rgba(239,68,68,0.08)',
-  border: '0.5px solid rgba(239,68,68,0.3)',
-  borderRadius: 6,
+  color: '#FFB3C1',
+  fontSize: 14,
+  padding: '10px 12px',
+  background: 'var(--danger-soft)',
+  border: '1px solid rgba(255,92,122,0.4)',
+  borderRadius: 12,
   lineHeight: 1.45,
 }
 
 export const authSuccessStyle: CSSProperties = {
-  color: '#10b981',
-  fontSize: 12,
-  padding: '8px 10px',
-  background: 'rgba(16,185,129,0.08)',
-  border: '0.5px solid rgba(16,185,129,0.3)',
-  borderRadius: 6,
+  color: 'var(--lime-light)',
+  fontSize: 14,
+  padding: '10px 12px',
+  background: 'var(--lime-soft)',
+  border: '1px solid rgba(182,242,62,0.35)',
+  borderRadius: 12,
   lineHeight: 1.45,
 }
