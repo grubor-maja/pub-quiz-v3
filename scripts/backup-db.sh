@@ -10,7 +10,16 @@
 # Install on the server (adjust the path if the repo lives elsewhere):
 #   chmod +x ~/pub-quiz-v3/scripts/backup-db.sh
 #   crontab -e
-#   30 3 * * * /home/$USER/pub-quiz-v3/scripts/backup-db.sh >> /home/$USER/backup.log 2>&1
+#   30 3 * * * bash /home/$USER/pub-quiz-v3/scripts/backup-db.sh >> /home/$USER/backup.log 2>&1
+#
+# Call it through "bash" in cron rather than relying on the execute bit: a
+# commit made on Windows stores the file as 644, and the next git pull on the
+# server quietly takes the bit away again. That stopped nightly backups for
+# two months before anyone noticed.
+#
+# The deploy pipeline also runs it before migrations, into its own directory
+# and with a timestamped name so two deploys on one day keep both dumps:
+#   BACKUP_DIR=~/backups/predeploy STAMP=$(date +%F-%H%M%S) KEEP_DAYS=7 bash scripts/backup-db.sh
 #
 # Restore a dump:
 #   gunzip -c ~/backups/pubquiz-YYYY-MM-DD.sql.gz | \
@@ -37,7 +46,7 @@ fi
 : "${DB_PASSWORD:?DB_PASSWORD not set}"
 
 mkdir -p "$BACKUP_DIR"
-STAMP="$(date +%F)"
+STAMP="${STAMP:-$(date +%F)}"
 TARGET="$BACKUP_DIR/pubquiz-$STAMP.sql.gz"
 TMP="$TARGET.partial"
 

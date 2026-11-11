@@ -225,7 +225,7 @@ export default function QuizDetailPage() {
                   sub={quiz.location && quiz.address ? quiz.address : undefined}
                 />
               )}
-              <Fact icon={<Coins size={18} />} label="Kotizacija" value={formatPrice(quiz.entry_fee)} />
+              <Fact icon={<Coins size={18} />} label="Kotizacija" value={quiz.entry_fee != null ? formatPrice(quiz.entry_fee) : 'Info u objavi'} />
               {team && <Fact icon={<Users size={18} />} label="Ekipa" value={team} />}
               {phone && <Fact icon={<Phone size={18} />} label="Kontakt" value={<a href={`tel:${phone}`} style={{ color: 'var(--lime)', textDecoration: 'none' }}>{phone}</a>} />}
             </div>

@@ -52,8 +52,8 @@ class QuizController extends Controller
             $sort === 'blizu' && $hasPosition => $query
                 ->orderByRaw('quizzes.latitude IS NULL')
                 ->orderBy('distance_km'),
-            // Free quizzes have no fee; they count as the cheapest.
-            $sort === 'cena' => $query->orderByRaw('COALESCE(entry_fee, 0) asc'),
+            // A missing fee means the post did not state one, so those go last.
+            $sort === 'cena' => $query->orderByRaw('entry_fee IS NULL')->orderBy('entry_fee'),
             $sort === 'novo' => $query->orderBy('quizzes.created_at', 'desc'),
             default => null,
         };
