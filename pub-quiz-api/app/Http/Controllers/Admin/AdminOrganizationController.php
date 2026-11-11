@@ -141,6 +141,7 @@ class AdminOrganizationController extends Controller
     {
         $data = $request->validate($this->rules());
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
+        $data['dragon_color'] ??= $this->freeDragonColor();
 
         $org = Organization::create($data);
 
@@ -201,7 +202,26 @@ class AdminOrganizationController extends Controller
             'default_contact_phone' => ['nullable', 'string', 'max:255'],
             'default_min_team_members' => ['nullable', 'integer', 'min:1', 'max:255'],
             'default_max_team_members' => ['nullable', 'integer', 'min:1', 'max:255'],
+            'dragon_color' => ['sometimes', 'string', Rule::in(Organization::DRAGON_COLORS)],
+            'dragon_prop' => ['sometimes', 'string', Rule::in(Organization::DRAGON_PROPS)],
+            'dragon_shirt' => ['sometimes', 'string', Rule::in(Organization::DRAGON_SHIRTS)],
         ];
+    }
+
+    /**
+     * The first color no organization uses yet, so a new organization's dragon
+     * is told apart from the others even when the admin does not pick one.
+     */
+    private function freeDragonColor(): string
+    {
+        $used = Organization::pluck('dragon_color')->all();
+        foreach (Organization::DRAGON_COLORS as $color) {
+            if (! in_array($color, $used, true)) {
+                return $color;
+            }
+        }
+
+        return Organization::DRAGON_COLORS[count($used) % count(Organization::DRAGON_COLORS)];
     }
 
     private function uniqueSlug(string $value, ?string $ignoreId = null): string

@@ -17,24 +17,28 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Pab Kviz Obrati Paznju',
                 'slug' => 'pab-kviz-obrati-paznju',
                 'instagram_handle' => 'pabkviz_obratipaznju',
+                'dragon_color' => 'koral', 'dragon_prop' => 'sijalica', 'dragon_shirt' => 'bela',
                 'description' => null,
             ],
             [
                 'name' => 'Pab Kviz 8x8',
                 'slug' => 'pab-kviz-8x8',
                 'instagram_handle' => 'pabkviz8x8',
+                'dragon_color' => 'tirkiz', 'dragon_prop' => 'lopta', 'dragon_shirt' => 'plava',
                 'description' => null,
             ],
             [
                 'name' => 'Pab Kviz Inkvizitor',
                 'slug' => 'pab-kviz-inkvizitor',
                 'instagram_handle' => 'pab_kviz_inkvizitor',
+                'dragon_color' => 'ljubicasta', 'dragon_prop' => 'lupa', 'dragon_shirt' => 'crna',
                 'description' => null,
             ],
             [
                 'name' => 'I HATE QUIZ',
                 'slug' => 'i-hate-quiz',
                 'instagram_handle' => 'pabkviz.rs',
+                'dragon_color' => 'led', 'dragon_prop' => 'ljutko', 'dragon_shirt' => 'crna',
                 'logo_url' => '/images/logo-i-hate-quiz.jpg',
                 'description' => null,
                 // Always hosted in their own club, so these rarely appear in the

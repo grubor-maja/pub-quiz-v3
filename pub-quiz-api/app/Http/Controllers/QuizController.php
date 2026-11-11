@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
 use App\Models\Quiz;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,20 +11,57 @@ class QuizController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'sort' => ['nullable', 'in:datum,blizu,cena,novo'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng,radius'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat,radius'],
+            'radius' => ['nullable', 'numeric', 'min:0.1', 'max:500'],
+        ]);
+
         $archive = $request->boolean('archive');
+        $sort = $request->input('sort', 'datum');
 
         $query = Quiz::published()
-            ->with('organization:id,name,slug,logo_url');
+            ->select('quizzes.*')
+            ->with('organization:'.Organization::CARD_COLUMNS);
 
-        // Default: only upcoming quizzes (today onward), ordered ascending (nearest first).
-        // Archive mode: only past quizzes, ordered descending (most recent past first).
+        // Default: only upcoming quizzes (today onward). Archive mode: only past ones.
         if ($archive) {
-            $query->whereDate('quiz_date', '<', now()->toDateString())
-                  ->orderBy('quiz_date', 'desc');
+            $query->whereDate('quiz_date', '<', now()->toDateString());
         } else {
-            $query->whereDate('quiz_date', '>=', now()->toDateString())
-                  ->orderBy('quiz_date', 'asc');
+            $query->whereDate('quiz_date', '>=', now()->toDateString());
         }
+
+        // "Near me": distance in km from the visitor's position, for the radius
+        // filter and the nearest-first sort. Quizzes the geocoder never placed
+        // cannot be measured, so a radius leaves them out.
+        $hasPosition = $request->filled('lat') && $request->filled('lng');
+        if ($hasPosition) {
+            $distance = 'ST_Distance_Sphere(POINT(quizzes.longitude, quizzes.latitude), POINT(?, ?)) / 1000';
+            $bindings = [(float) $request->input('lng'), (float) $request->input('lat')];
+            $query->selectRaw("{$distance} AS distance_km", $bindings);
+
+            if ($request->filled('radius')) {
+                $query->whereNotNull('quizzes.latitude')
+                      ->whereNotNull('quizzes.longitude')
+                      ->whereRaw("{$distance} <= ?", [...$bindings, (float) $request->input('radius')]);
+            }
+        }
+
+        match (true) {
+            $sort === 'blizu' && $hasPosition => $query
+                ->orderByRaw('quizzes.latitude IS NULL')
+                ->orderBy('distance_km'),
+            // Free quizzes have no fee; they count as the cheapest.
+            $sort === 'cena' => $query->orderByRaw('COALESCE(entry_fee, 0) asc'),
+            $sort === 'novo' => $query->orderBy('quizzes.created_at', 'desc'),
+            default => null,
+        };
+
+        // Within any sort, and as the default sort, the nearest date comes first
+        // (the most recent one in the archive).
+        $query->orderBy('quiz_date', $archive ? 'desc' : 'asc')
+              ->orderBy('quiz_time', $archive ? 'desc' : 'asc');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -89,7 +127,7 @@ class QuizController extends Controller
         // Cancelled quizzes stay reachable so anyone who favorited one, or is
         // holding a link, sees that it was called off instead of a 404.
         $quiz = Quiz::whereIn('status', ['published', 'cancelled'])
-            ->with('organization:id,name,slug,logo_url,instagram_handle,description')
+            ->with('organization:'.Organization::CARD_COLUMNS.',instagram_handle,description')
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -107,7 +145,7 @@ class QuizController extends Controller
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->where('quiz_date', '>=', now()->subDay())
-            ->with('organization:id,name,slug,logo_url');
+            ->with('organization:'.Organization::CARD_COLUMNS);
 
         if ($request->filled('org')) {
             $slugs = array_filter(array_map('trim', explode(',', $request->input('org'))));
@@ -165,7 +203,7 @@ class QuizController extends Controller
 
         $descParts = [];
         if ($quiz->organization) $descParts[] = "Organizator: {$quiz->organization->name}";
-        if ($quiz->entry_fee !== null) $descParts[] = "Kotizacija: {$quiz->entry_fee} din po timu";
+        if ($quiz->entry_fee !== null) $descParts[] = "Kotizacija: {$quiz->entry_fee} din";
         if ($quiz->min_team_members && $quiz->max_team_members) {
             $descParts[] = "Timovi: {$quiz->min_team_members}-{$quiz->max_team_members} članova";
         } elseif ($quiz->min_team_members) {

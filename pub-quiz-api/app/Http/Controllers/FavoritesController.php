@@ -13,7 +13,7 @@ class FavoritesController extends Controller
         $user = $request->user();
 
         $quizzes = $user->favorites()
-            ->with('organization:id,name,slug,logo_url')
+            ->with('organization:'.\App\Models\Organization::CARD_COLUMNS)
             ->orderBy('favorites.created_at', 'desc')
             ->get()
             ->map(function (Quiz $quiz) {
