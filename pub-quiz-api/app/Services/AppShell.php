@@ -21,7 +21,7 @@ use RuntimeException;
  */
 class AppShell
 {
-    private const SITE_NAME = 'Ko Zna Zna';
+    private const SITE_NAME = 'Ko Zna Gde';
 
     /**
      * Tags the build already wrote into index.html, removed before ours go in.
@@ -45,7 +45,7 @@ class AppShell
             ? $meta->title
             : $meta->title . ' | ' . self::SITE_NAME;
         $url = $base . $meta->path;
-        $image = $meta->image ?: $base . '/images/logo1.png';
+        $image = $meta->image ?: $base . '/images/og-image.png';
 
         $html = preg_replace(self::STALE_TAGS, '', $this->shell());
 

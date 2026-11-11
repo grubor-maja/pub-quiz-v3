@@ -218,7 +218,7 @@ class QuizController extends Controller
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//KoZnaZna//EN',
+            'PRODID:-//KoZnaGde//EN',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             'BEGIN:VEVENT',

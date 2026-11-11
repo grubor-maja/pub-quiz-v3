@@ -13,12 +13,12 @@ class ResetPasswordNotification extends ResetPassword
         $url = $frontendUrl.'/reset-password?token='.$this->token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
 
         return (new MailMessage)
-            ->subject('Resetovanje lozinke - Ko Zna Zna')
+            ->subject('Resetovanje lozinke - Ko Zna Gde')
             ->greeting('Zdravo!')
             ->line('Dobili ste ovaj email jer je zatraženo resetovanje lozinke za vaš nalog.')
             ->action('Resetuj lozinku', $url)
             ->line('Link vazi 60 minuta.')
             ->line('Ako niste zatrazili resetovanje lozinke, ignorisite ovaj email.')
-            ->salutation('Ko Zna Zna tim');
+            ->salutation('Ko Zna Gde tim');
     }
 }

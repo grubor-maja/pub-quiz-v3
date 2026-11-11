@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const SITE_NAME = 'Ko Zna Zna'
+const SITE_NAME = 'Ko Zna Gde'
 const BASE_URL = 'https://koznazna.me'
 
 interface SeoOptions {
@@ -45,7 +45,7 @@ export function useSeo({ title, description, path, image, jsonLd, enabled = true
 
     const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
     const url = BASE_URL + (path ?? window.location.pathname)
-    const img = image ?? `${BASE_URL}/images/logo1.png`
+    const img = image ?? `${BASE_URL}/images/og-image.png`
 
     document.title = fullTitle
 
