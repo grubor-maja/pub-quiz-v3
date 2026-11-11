@@ -1,6 +1,6 @@
-# Ko Zna Zna
+# Ko zna gde
 
-A pub quiz aggregator for Serbia, live at [koznazna.me](https://koznazna.me).
+A pub quiz aggregator for Serbia, live at [koznagde.rs](https://koznagde.rs).
 
 Quiz organizers announce their events on Instagram and nowhere else. There is no
 feed, no API, no shared calendar. If you want to know what is on this Thursday you

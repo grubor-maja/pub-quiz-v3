@@ -241,7 +241,7 @@ class PageController extends Controller
 
     private function url(string $path): string
     {
-        return rtrim((string) config('app.frontend_url', 'https://koznazna.me'), '/') . $path;
+        return rtrim((string) config('app.frontend_url', 'https://koznagde.rs'), '/') . $path;
     }
 
     /**

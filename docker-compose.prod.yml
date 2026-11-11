@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: docker/frontend/Dockerfile.prod
       args:
-        VITE_API_BASE_URL: https://koznazna.me/api
+        VITE_API_BASE_URL: https://koznagde.rs/api
     container_name: pubquiz-frontend
     restart: always
     ports:

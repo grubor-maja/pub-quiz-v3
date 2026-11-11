@@ -49,12 +49,12 @@ API: http://localhost:8080/api
 
 | | Lokalno | Produkcija |
 |---|---|---|
-| Frontend | http://localhost:5173 | https://koznazna.me |
-| API | http://localhost:8080/api | https://koznazna.me/api |
+| Frontend | http://localhost:5173 | https://koznagde.rs |
+| API | http://localhost:8080/api | https://koznagde.rs/api |
 | DB port | localhost:3306 | samo Docker interna mreza |
 
-Server: 157.245.74.186
-SSH: deploy@157.245.74.186
+Server: 130.162.59.93
+SSH: deploy@130.162.59.93
 
 ---
 
@@ -110,7 +110,7 @@ DB_DATABASE=pubquiz
 DB_USERNAME=pubquiz
 DB_PASSWORD=pubquiz_secret
 
-CORS_ALLOWED_ORIGINS=http://localhost:5173,https://koznazna.me
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://koznagde.rs
 
 APIFY_TOKEN=                sa apify.com
 APIFY_ACTOR_ID=shu8hvrXbJbY3Eb9W

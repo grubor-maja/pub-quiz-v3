@@ -54,7 +54,7 @@ class GeocodeQuizzes extends Command
             foreach ($queries as $q) {
                 try {
                     $response = Http::withHeaders([
-                        'User-Agent' => 'KoZnaGde/1.0 (koznazna.me)',
+                        'User-Agent' => 'KoZnaGde/1.0 (koznagde.rs)',
                         'Accept-Language' => 'sr,en',
                     ])
                     ->timeout(15)

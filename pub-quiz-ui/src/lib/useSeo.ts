@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 const SITE_NAME = 'Ko Zna Gde'
-const BASE_URL = 'https://koznazna.me'
+const BASE_URL = 'https://koznagde.rs'
 
 interface SeoOptions {
   /** Page title. The site name is appended automatically. */

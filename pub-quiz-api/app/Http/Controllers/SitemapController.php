@@ -14,7 +14,7 @@ class SitemapController extends Controller
 {
     public function index(): Response
     {
-        $base = rtrim(config('app.frontend_url', 'https://koznazna.me'), '/');
+        $base = rtrim(config('app.frontend_url', 'https://koznagde.rs'), '/');
 
         $urls = [
             ['loc' => $base . '/', 'changefreq' => 'daily', 'priority' => '1.0'],
@@ -70,7 +70,7 @@ class SitemapController extends Controller
 
     public function robots(): Response
     {
-        $base = rtrim(config('app.frontend_url', 'https://koznazna.me'), '/');
+        $base = rtrim(config('app.frontend_url', 'https://koznagde.rs'), '/');
 
         $body = implode("\n", [
             'User-agent: *',

@@ -142,6 +142,6 @@ class AppShell
 
     private function baseUrl(): string
     {
-        return rtrim((string) config('app.frontend_url', 'https://koznazna.me'), '/');
+        return rtrim((string) config('app.frontend_url', 'https://koznagde.rs'), '/');
     }
 }

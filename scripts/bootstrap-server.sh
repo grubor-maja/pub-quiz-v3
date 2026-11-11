@@ -20,7 +20,7 @@ set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/grubor-maja/pub-quiz-v3.git}"
 REPO_DIR="${REPO_DIR:-$HOME/pub-quiz-v3}"
-DOMAIN="${DOMAIN:-koznazna.me}"
+DOMAIN="${DOMAIN:-koznagde.rs}"
 
 say() { printf '\n\033[1;33m==> %s\033[0m\n' "$1"; }
 
