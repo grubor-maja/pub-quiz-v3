@@ -1,12 +1,69 @@
-name: deploy to production
+name: ci and deploy
 
+# Pull requests into master run the checks only; branch protection requires
+# them to pass before the PR can be merged. A push to master (that merge) runs
+# the same checks again and deploys only if they pass.
+#
+# Pull requests from forks get no secrets, and the deploy job is skipped for
+# every pull_request event, so a stranger's PR can never reach the server.
 on:
+  pull_request:
+    branches: [master]
   push:
-    branches:
-      - master
+    branches: [master]
+
+# Two merges in quick succession must not deploy on top of each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
+  backend:
+    name: backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pub-quiz-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, bcmath, gd, zip, exif
+          coverage: none
+      - name: install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: prepare env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: run tests
+        run: php artisan test
+
+  frontend:
+    name: frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pub-quiz-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: pub-quiz-ui/package-lock.json
+      - run: npm ci
+      - name: type check and build
+        run: npm run build
+
   deploy:
+    name: deploy
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: deploy via ssh
@@ -17,14 +74,38 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             cd ~/pub-quiz-v3
             git pull origin master
+
+            # A restorable copy of the database before anything touches it.
+            # If the dump fails, set -e stops the deploy here.
+            BACKUP_DIR="$HOME/backups/predeploy" STAMP="$(date +%F-%H%M%S)" KEEP_DAYS=7 \
+              bash scripts/backup-db.sh
+
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml exec -T backend php artisan migrate --force
+
+            # Health check against nginx on the box itself, so it tests the
+            # app and the proxy without depending on DNS or Cloudflare.
+            # Containers need a few seconds after a rebuild, hence the retries.
+            check() {
+              for i in $(seq 1 12); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: koznagde.rs' "http://127.0.0.1$1" || true)
+                [ "$code" = "200" ] && { echo "ok $1"; return 0; }
+                sleep 5
+              done
+              echo "HEALTH CHECK FAILED: $1 returned $code" >&2
+              return 1
+            }
+            check /api/organizations
+            check /
+
             # Each rebuild leaves the previous image behind. Left alone these
-            # fill a small droplet's disk within a few dozen deploys, which
-            # takes the whole box down, so clear them out every time.
+            # fill a small disk within a few dozen deploys, which takes the
+            # whole box down, so clear them out - but only after the new
+            # version is confirmed healthy.
             docker image prune -af
             docker builder prune -af --filter until=168h
