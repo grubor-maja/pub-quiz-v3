@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\Quiz;
 use App\Services\Audit;
 use Illuminate\Http\JsonResponse;
+use App\Support\Like;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -16,14 +17,25 @@ class AdminAuditController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'search' => ['nullable', 'string', 'max:200'],
+            'action' => ['nullable', 'string', 'max:64'],
+            'subject_type' => ['nullable', 'string', 'max:32'],
+            'user_id' => ['nullable', 'integer'],
+            'organization_id' => ['nullable', 'string', 'max:64'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
         $query = AuditLog::query()->orderByDesc('created_at')->orderByDesc('id');
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = Like::contains($request->input('search'));
             $query->where(fn ($q) => $q
-                ->where('user_name', 'like', "%{$search}%")
-                ->orWhere('user_email', 'like', "%{$search}%")
-                ->orWhere('subject_label', 'like', "%{$search}%"));
+                ->where('user_name', 'like', $search)
+                ->orWhere('user_email', 'like', $search)
+                ->orWhere('subject_label', 'like', $search));
         }
         if ($request->filled('action')) {
             $query->where('action', $request->input('action'));

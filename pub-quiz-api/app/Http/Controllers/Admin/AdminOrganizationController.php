@@ -217,7 +217,7 @@ class AdminOrganizationController extends Controller
             'name' => [$required, 'string', 'min:2', 'max:255'],
             'slug' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/'],
             'instagram_handle' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9._]+$/'],
-            'logo_url' => ['nullable', 'string', 'max:2000'],
+            'logo_url' => ['nullable', 'string', 'max:2000', 'regex:' . AdminQuizController::SAFE_URL],
             'description' => ['nullable', 'string'],
             'default_location' => ['nullable', 'string', 'max:255'],
             'default_address' => ['nullable', 'string', 'max:255'],

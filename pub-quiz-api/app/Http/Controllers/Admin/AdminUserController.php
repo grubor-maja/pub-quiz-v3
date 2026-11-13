@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\Audit;
 use Illuminate\Http\JsonResponse;
+use App\Support\Like;
 use Illuminate\Http\Request;
 
 /**
@@ -19,16 +20,22 @@ class AdminUserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'search' => ['nullable', 'string', 'max:200'],
+            'role' => ['nullable', 'string'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
         $query = User::query()
             ->with('managedOrganizations:organizations.id,organizations.name,organizations.slug')
             ->orderByDesc('is_admin')
             ->orderBy('name');
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = Like::contains($request->input('search'));
             $query->where(fn ($q) => $q
-                ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%"));
+                ->where('name', 'like', $search)
+                ->orWhere('email', 'like', $search));
         }
 
         if ($request->input('role') === 'org_admin') {

@@ -107,8 +107,9 @@ class AdminRolesTest extends TestCase
         $user = $this->orgAdmin();
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/admin/quizzes', ['organization_id' => $this->mine->id, 'title' => 'Novi kviz'])
-            ->assertCreated();
+        $this->postJson('/api/admin/quizzes', [
+            'organization_id' => $this->mine->id, 'title' => 'Novi kviz', 'quiz_date' => now()->addWeek()->toDateString(),
+        ])->assertCreated();
         $this->putJson("/api/admin/quizzes/{$this->myQuiz->id}", ['title' => 'Preimenovan'])->assertOk();
         $this->deleteJson("/api/admin/quizzes/{$this->myQuiz->id}")->assertOk();
 

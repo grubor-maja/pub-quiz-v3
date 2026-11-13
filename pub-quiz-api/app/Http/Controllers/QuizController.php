@@ -5,10 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\Quiz;
 use Illuminate\Http\JsonResponse;
+use App\Support\Like;
 use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
+    /**
+     * Filters shared by the list and the map. Each must be a plain string:
+     * ?org[]=x arrives as an array, and explode() on an array was a 500.
+     */
+    private const FILTER_RULES = [
+        'search' => ['nullable', 'string', 'max:200'],
+        'org' => ['nullable', 'string', 'max:1000'],
+        'date_from' => ['nullable', 'date'],
+        'date_to' => ['nullable', 'date'],
+        'page' => ['nullable', 'integer', 'min:1'],
+    ];
+
     public function index(Request $request): JsonResponse
     {
         $request->validate([
@@ -16,6 +29,7 @@ class QuizController extends Controller
             'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng,radius'],
             'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat,radius'],
             'radius' => ['nullable', 'numeric', 'min:0.1', 'max:500'],
+            ...self::FILTER_RULES,
         ]);
 
         $archive = $request->boolean('archive');
@@ -64,11 +78,11 @@ class QuizController extends Controller
               ->orderBy('quiz_time', $archive ? 'desc' : 'asc');
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = Like::contains($request->input('search'));
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                $q->where('title', 'like', $search)
+                  ->orWhere('location', 'like', $search)
+                  ->orWhere('address', 'like', $search);
             });
         }
 
@@ -141,6 +155,8 @@ class QuizController extends Controller
 
     public function map(Request $request): JsonResponse
     {
+        $request->validate(self::FILTER_RULES);
+
         $query = Quiz::published()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
