@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Audit;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,12 +34,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => $user->isAdmin(),
-            ],
+            'user' => $user->toAuthArray(),
             'token' => $token,
         ], 201);
     }
@@ -62,13 +58,14 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('auth')->plainTextToken;
 
+        // Only people who can change data are logged, so the audit page shows
+        // who was in the admin panels without listing every visitor.
+        if ($user->canManageAnything()) {
+            Audit::record('auth.login', actor: $user);
+        }
+
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => $user->isAdmin(),
-            ],
+            'user' => $user->toAuthArray(),
             'token' => $token,
         ]);
     }
@@ -91,12 +88,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => $user->isAdmin(),
-            ],
+            'user' => $user->toAuthArray(),
         ]);
     }
 

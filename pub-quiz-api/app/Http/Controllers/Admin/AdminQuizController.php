@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
+use App\Services\Audit;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,7 +21,8 @@ class AdminQuizController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Quiz::with('organization:id,name,slug')
+        $query = $this->scoped($request)
+            ->with('organization:id,name,slug')
             ->orderByDesc('quiz_date');
 
         if ($request->filled('search')) {
@@ -40,27 +43,34 @@ class AdminQuizController extends Controller
         return response()->json($query->paginate(30));
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        return response()->json(Quiz::with('organization:id,name,slug')->findOrFail($id));
+        return response()->json($this->scoped($request)->with('organization:id,name,slug')->findOrFail($id));
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate($this->rules());
+        $this->authorizeOrganization($request, $data['organization_id']);
 
         $data['slug'] = $this->uniqueSlug($data['title'], $data['quiz_date'] ?? null);
         $data['status'] ??= 'published';
 
         $quiz = Quiz::create($data);
+        Audit::record('quiz.created', $quiz, Audit::snapshot($quiz));
 
         return response()->json($quiz->load('organization:id,name,slug'), 201);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $quiz = Quiz::findOrFail($id);
+        $quiz = $this->scoped($request)->findOrFail($id);
         $data = $request->validate($this->rules(partial: true));
+
+        // Moving a quiz to another organization needs rights over both.
+        if (isset($data['organization_id'])) {
+            $this->authorizeOrganization($request, $data['organization_id']);
+        }
 
         // The slug is part of the public URL, so it is only regenerated when
         // the title actually changes. Otherwise a small typo fix would break
@@ -73,14 +83,23 @@ class AdminQuizController extends Controller
             );
         }
 
+        $before = $quiz->getRawOriginal();
         $quiz->update($data);
+        $changes = Audit::diff($quiz, $before);
+        if ($changes !== []) {
+            Audit::record('quiz.updated', $quiz, $changes);
+        }
 
         return response()->json($quiz->fresh()->load('organization:id,name,slug'));
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $quiz = Quiz::findOrFail($id);
+        $quiz = $this->scoped($request)->findOrFail($id);
+
+        // The full row goes into the log, which is what makes "Vrati" on the
+        // audit page possible after an accidental delete.
+        Audit::record('quiz.deleted', $quiz, Audit::snapshot($quiz));
 
         // Detaching first keeps the quiz from vanishing out of someone's
         // favourites through a cascade they never see.
@@ -88,6 +107,28 @@ class AdminQuizController extends Controller
         $quiz->delete();
 
         return response()->json(['message' => 'Kviz obrisan.']);
+    }
+
+    /**
+     * Quizzes the caller may see and change. An organization admin gets only
+     * their organizations' quizzes, so another organization's quiz id answers
+     * 404 exactly like one that does not exist.
+     */
+    private function scoped(Request $request): Builder
+    {
+        $ids = $request->user()->manageableOrganizationIds();
+
+        return Quiz::query()->when($ids !== null, fn ($q) => $q->whereIn('organization_id', $ids));
+    }
+
+    private function authorizeOrganization(Request $request, string $organizationId): void
+    {
+        if (! $request->user()->canManageOrganization($organizationId)) {
+            abort(response()->json([
+                'message' => 'Nemate pravo na tu organizaciju.',
+                'errors' => ['organization_id' => ['Nemate pravo na tu organizaciju.']],
+            ], 422));
+        }
     }
 
     /**

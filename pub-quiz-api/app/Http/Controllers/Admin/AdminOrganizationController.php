@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Services\Audit;
 use App\Services\Extraction\OrganizationProfiler;
 use App\Services\QuizExtractionService;
 use Illuminate\Http\JsonResponse;
@@ -18,9 +19,19 @@ use Illuminate\Validation\Rule;
  */
 class AdminOrganizationController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Fields only a site admin may change. The slug is the public URL and the
+     * handle decides what the scraper reads, so a mistake in either reaches
+     * well past the organization's own page.
+     */
+    private const ADMIN_ONLY_FIELDS = ['slug', 'instagram_handle'];
+
+    public function index(Request $request): JsonResponse
     {
+        $ids = $request->user()->manageableOrganizationIds();
+
         $orgs = Organization::withCount('quizzes')
+            ->when($ids !== null, fn ($q) => $q->whereIn('id', $ids))
             ->orderBy('name')
             ->get()
             // The extraction defaults are hidden from the public API, but this
@@ -144,14 +155,21 @@ class AdminOrganizationController extends Controller
         $data['dragon_color'] ??= $this->freeDragonColor();
 
         $org = Organization::create($data);
+        Audit::record('organization.created', $org, Audit::snapshot($org));
 
         return response()->json($org, 201);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $org = Organization::findOrFail($id);
+        $user = $request->user();
+        $ids = $user->manageableOrganizationIds();
+        $org = Organization::when($ids !== null, fn ($q) => $q->whereIn('id', $ids))->findOrFail($id);
         $data = $request->validate($this->rules(partial: true, ignoreId: $id));
+
+        if (! $user->isAdmin()) {
+            $data = array_diff_key($data, array_flip(self::ADMIN_ONLY_FIELDS));
+        }
 
         // Changing a slug changes the organization's public URL, so it is only
         // touched when explicitly sent, never derived from a renamed title.
@@ -159,7 +177,12 @@ class AdminOrganizationController extends Controller
             $data['slug'] = $this->uniqueSlug($data['slug'], $id);
         }
 
+        $before = $org->getRawOriginal();
         $org->update($data);
+        $changes = Audit::diff($org, $before);
+        if ($changes !== []) {
+            Audit::record('organization.updated', $org, $changes);
+        }
 
         return response()->json($org->fresh());
     }
@@ -177,6 +200,7 @@ class AdminOrganizationController extends Controller
             ], 422);
         }
 
+        Audit::record('organization.deleted', $org, Audit::snapshot($org));
         $org->delete();
 
         return response()->json(['message' => 'Organizacija obrisana.']);

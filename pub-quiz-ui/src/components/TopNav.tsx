@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarCog, Heart, LogOut, ShieldCheck, User as UserIcon } from 'lucide-react'
+import { CalendarCog, Heart, History, LogOut, ShieldCheck, User as UserIcon, Users } from 'lucide-react'
+import type { ReactNode } from 'react'
 import Zmaj from './Zmaj'
 import { useAuth } from '../context/AuthContext'
+import { canManage } from '../types'
 
 export function Wordmark({ size = 21 }: { size?: number }) {
   return (
@@ -94,11 +96,21 @@ function AccountMenu() {
           </div>
           <Link to="/profil" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><UserIcon size={16} /> Moj profil</span></Link>
           <Link to="/profil" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Heart size={16} /> Omiljeni kvizovi</span></Link>
-          {user.is_admin && (
+          {user.is_admin ? (
             <>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text-muted)', padding: '10px 12px 4px' }}>ADMIN</div>
-              <Link to="/admin/kvizovi" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><CalendarCog size={16} /> Kvizovi</span></Link>
-              <Link to="/admin/organizacije" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><ShieldCheck size={16} /> Organizacije</span></Link>
+              <MenuHeading>ADMIN</MenuHeading>
+              <MenuLink to="/admin/kvizovi" icon={<CalendarCog size={16} />} onClick={() => setOpen(false)}>Kvizovi</MenuLink>
+              <MenuLink to="/admin/organizacije" icon={<ShieldCheck size={16} />} onClick={() => setOpen(false)}>Organizacije</MenuLink>
+              <MenuLink to="/admin/korisnici" icon={<Users size={16} />} onClick={() => setOpen(false)}>Korisnici</MenuLink>
+              <MenuLink to="/admin/audit" icon={<History size={16} />} onClick={() => setOpen(false)}>Audit log</MenuLink>
+            </>
+          ) : canManage(user) && (
+            <>
+              <MenuHeading>ADMINISTRATOR</MenuHeading>
+              <MenuLink to="/admin/organizacije" icon={<ShieldCheck size={16} />} onClick={() => setOpen(false)}>
+                {user.managed_organizations!.length > 1 ? 'Moje organizacije' : 'Moja organizacija'}
+              </MenuLink>
+              <MenuLink to="/admin/kvizovi" icon={<CalendarCog size={16} />} onClick={() => setOpen(false)}>Moji kvizovi</MenuLink>
             </>
           )}
           <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6, paddingTop: 6 }}>
@@ -109,5 +121,17 @@ function AccountMenu() {
         </div>
       )}
     </div>
+  )
+}
+
+function MenuHeading({ children }: { children: ReactNode }) {
+  return <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text-muted)', padding: '10px 12px 4px' }}>{children}</div>
+}
+
+function MenuLink({ to, icon, onClick, children }: { to: string; icon: ReactNode; onClick: () => void; children: ReactNode }) {
+  return (
+    <Link to={to} className="menu-item" role="menuitem" onClick={onClick}>
+      <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>{icon} {children}</span>
+    </Link>
   )
 }

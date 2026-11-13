@@ -73,7 +73,55 @@ export interface User {
   email: string
   /** Granted only by the user:make-admin command on the server. */
   is_admin?: boolean
+  /** Organizations this user administers, assigned by a site admin. */
+  managed_organizations?: OrgRef[]
   created_at: string
+}
+
+export interface OrgRef {
+  id: string
+  name: string
+  slug: string
+}
+
+/** A site admin, or someone who administers at least one organization. */
+export const canManage = (u: User | null | undefined): boolean =>
+  !!u && (!!u.is_admin || (u.managed_organizations?.length ?? 0) > 0)
+
+export interface AdminUser {
+  id: number
+  name: string
+  email: string
+  is_admin: boolean
+  created_at: string
+  managed_organizations: OrgRef[]
+}
+
+export interface AuditEntry {
+  id: number
+  user_id: number | null
+  user_name: string | null
+  user_email: string | null
+  action: string
+  subject_type: 'quiz' | 'organization' | 'user' | null
+  subject_id: string | null
+  subject_label: string | null
+  organization_id: string | null
+  changes: Record<string, unknown> | null
+  ip: string | null
+  user_agent: string | null
+  created_at: string
+  restorable?: boolean
+}
+
+export interface AuditFilters {
+  search?: string
+  action?: string
+  subject_type?: string
+  organization_id?: string
+  date_from?: string
+  date_to?: string
+  page?: number
 }
 
 /** Organization as the admin API returns it, with the extraction defaults. */

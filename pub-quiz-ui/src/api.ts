@@ -2,6 +2,9 @@ import axios from 'axios'
 import type {
   AdminOrganization,
   AdminQuizFilters,
+  AdminUser,
+  AuditEntry,
+  AuditFilters,
   AuthResponse,
   LoginPayload,
   Organization,
@@ -187,6 +190,28 @@ export const adminUpdateOrganization = async (id: string, payload: Partial<Admin
 
 export const adminDeleteOrganization = async (id: string): Promise<{ message: string }> => {
   const { data } = await api.delete(`/admin/organizations/${id}`)
+  return data
+}
+
+const clean = (o: object) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== ''))
+
+export const adminFetchUsers = async (params: { search?: string; role?: string; page?: number }): Promise<PaginatedResponse<AdminUser>> => {
+  const { data } = await api.get('/admin/users', { params: clean(params) })
+  return data
+}
+
+export const adminSetUserOrganizations = async (id: number, organizationIds: string[]): Promise<User> => {
+  const { data } = await api.put(`/admin/users/${id}/organizations`, { organization_ids: organizationIds })
+  return data
+}
+
+export const adminFetchAudit = async (filters: AuditFilters): Promise<PaginatedResponse<AuditEntry>> => {
+  const { data } = await api.get('/admin/audit', { params: clean(filters) })
+  return data
+}
+
+export const adminRestoreFromAudit = async (id: number): Promise<Quiz> => {
+  const { data } = await api.post(`/admin/audit/${id}/restore`)
   return data
 }
 
