@@ -4,13 +4,17 @@ name: ci and deploy
 # them to pass before the PR can be merged. A push to master (that merge) runs
 # the same checks again and deploys only if they pass.
 #
-# Pull requests from forks get no secrets, and the deploy job is skipped for
+# A push to dev runs the same checks and deploys to the test site
+# (https://test.koznagde.rs), which lives in ~/pub-quiz-v3-staging on the same
+# server with its own containers and database. Production is never touched.
+#
+# Pull requests from forks get no secrets, and the deploy jobs are skipped for
 # every pull_request event, so a stranger's PR can never reach the server.
 on:
   pull_request:
     branches: [master]
   push:
-    branches: [master]
+    branches: [master, dev]
 
 # Two merges in quick succession must not deploy on top of each other.
 concurrency:
@@ -109,3 +113,47 @@ jobs:
             # version is confirmed healthy.
             docker image prune -af
             docker builder prune -af --filter until=168h
+
+  deploy-staging:
+    name: deploy to test
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: deploy via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ~/pub-quiz-v3-staging || {
+              echo "~/pub-quiz-v3-staging does not exist - set up the test site first (see CLAUDE.md, Test okruzenje)" >&2
+              exit 1
+            }
+
+            # Exactly what is on dev, even after a force push. The server copy
+            # has no local edits; its .env files are gitignored and survive.
+            git fetch origin dev
+            git reset --hard origin/dev
+
+            docker compose -f docker-compose.staging.yml up -d --build
+            docker compose -f docker-compose.staging.yml exec -T backend php artisan migrate --force
+
+            # Straight at the staging containers, so the check does not depend
+            # on nginx, certbot's redirects or Cloudflare.
+            check() {
+              for i in $(seq 1 12); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' "$1" || true)
+                [ "$code" = "200" ] && { echo "ok $1"; return 0; }
+                sleep 5
+              done
+              echo "HEALTH CHECK FAILED: $1 returned $code" >&2
+              return 1
+            }
+            check http://127.0.0.1:8081/api/organizations
+            check http://127.0.0.1:5174/
+
+            docker image prune -af

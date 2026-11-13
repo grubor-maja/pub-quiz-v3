@@ -4,6 +4,7 @@ DEVLOG.md
 # Laravel
 pub-quiz-api/.env
 pub-quiz-api/.env.prod
+pub-quiz-api/.env.staging
 pub-quiz-api/vendor/
 pub-quiz-api/node_modules/
 pub-quiz-api/storage/app/public/

@@ -1,0 +1,67 @@
+# Test okruzenje na https://test.koznagde.rs - isti server kao produkcija,
+# potpuno odvojeno od nje: svoji kontejneri, svoja baza, svoji portovi.
+#
+# Zivi u posebnoj kopiji repoa na serveru (~/pub-quiz-v3-staging, grana dev):
+#   docker compose -f docker-compose.staging.yml up -d --build
+#
+# Razlike u odnosu na docker-compose.prod.yml:
+#   - imena kontejnera i image-a imaju -staging, da se ne sudare sa prod
+#   - portovi 8081/5174, vezani samo na 127.0.0.1 (nginx na hostu ih proksira)
+#   - nema schedulera: dnevni Instagram sync bi duplo trosio Apify/Groq kredite.
+#     Rucno: docker compose -f docker-compose.staging.yml exec backend php artisan instagram:sync
+#   - MySQL sa smanjenom memorijom, jer deli masinu sa produkcijom
+
+name: pubquiz-staging
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pubquiz-staging-mysql
+    restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --performance-schema=OFF
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USERNAME}", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile.prod
+    image: pubquiz-backend-staging
+    container_name: pubquiz-staging-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - ./pub-quiz-api/.env.staging:/var/www/html/.env:ro
+      - storage_data:/var/www/html/storage/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: https://test.koznagde.rs/api
+    image: pubquiz-frontend-staging
+    container_name: pubquiz-staging-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5174:80"
+
+volumes:
+  mysql_data:
+  storage_data:
