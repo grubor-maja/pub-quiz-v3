@@ -7,6 +7,7 @@ import {
 import type { AdminQuizFilters, Quiz } from '../../types'
 import Field, { inputStyle } from '../../components/admin/Field'
 import { useSeo } from '../../lib/useSeo'
+import { useAuth } from '../../context/AuthContext'
 import {
   btnPrimary, btnGhost, btnGhostWide, rowStyle, emptyStyle,
   noticeStyle, overlayStyle, modalStyle, gridStyle,
@@ -47,6 +48,8 @@ export default function AdminQuizzesPage() {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState<string | null>(null)
+  const { user } = useAuth()
+  const siteAdmin = !!user?.is_admin
 
   useSeo({ title: 'Administracija kvizova', description: 'Interna stranica.', path: '/admin/kvizovi' })
 
@@ -92,7 +95,7 @@ export default function AdminQuizzesPage() {
     <div className="page-pad" style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div className="section-heading">
         <h1 className="sg" style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-          Kvizovi
+          {siteAdmin ? 'Kvizovi' : 'Moji kvizovi'}
         </h1>
         <button
           onClick={() => { setDraft({ status: 'published', organization_id: orgs?.[0]?.id }); setErrors({}) }}
@@ -112,14 +115,16 @@ export default function AdminQuizzesPage() {
           value={filters.search ?? ''}
           onChange={e => setFilters(f => ({ ...f, search: e.target.value || undefined, page: 1 }))}
         />
-        <select
-          style={{ ...inputStyle, maxWidth: 190 }}
-          value={filters.org ?? ''}
-          onChange={e => setFilters(f => ({ ...f, org: e.target.value || undefined, page: 1 }))}
-        >
-          <option value="">Sve organizacije</option>
-          {orgs?.map(o => <option key={o.id} value={o.slug}>{o.name}</option>)}
-        </select>
+        {(orgs?.length ?? 0) > 1 && (
+          <select
+            style={{ ...inputStyle, maxWidth: 190 }}
+            value={filters.org ?? ''}
+            onChange={e => setFilters(f => ({ ...f, org: e.target.value || undefined, page: 1 }))}
+          >
+            <option value="">{siteAdmin ? 'Sve organizacije' : 'Sve moje organizacije'}</option>
+            {orgs?.map(o => <option key={o.id} value={o.slug}>{o.name}</option>)}
+          </select>
+        )}
         <select
           style={{ ...inputStyle, maxWidth: 150 }}
           value={filters.status ?? ''}

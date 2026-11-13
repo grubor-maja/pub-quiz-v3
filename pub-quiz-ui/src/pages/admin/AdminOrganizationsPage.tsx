@@ -19,6 +19,7 @@ import {
   accentOf, dragonOf, tint, type DragonColor,
 } from '../../lib/dragon'
 import { useSeo } from '../../lib/useSeo'
+import { useAuth } from '../../context/AuthContext'
 
 type Draft = Partial<AdminOrganization>
 
@@ -53,6 +54,11 @@ export default function AdminOrganizationsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [test, setTest] = useState<TestSyncResult | null>(null)
   const [formMsg, setFormMsg] = useState<string | null>(null)
+  const { user } = useAuth()
+  // Organization admins edit their own organizations; creating, deleting,
+  // the scraper tools, slug and handle stay with the site admin (the API
+  // enforces the same split).
+  const siteAdmin = !!user?.is_admin
 
   useSeo({ title: 'Administracija organizacija', description: 'Interna stranica.', path: '/admin/organizacije' })
 
@@ -124,6 +130,7 @@ export default function AdminOrganizationsPage() {
     return (
       <Editor
         draft={draft} set={set} errors={errors} formMsg={formMsg} test={test}
+        siteAdmin={siteAdmin} backLabel={siteAdmin ? 'Organizacije' : 'Moje organizacije'}
         onBack={close}
         onLoad={() => draft.instagram_handle && preview.mutate(draft.instagram_handle)} loading={preview.isPending}
         onTest={() => { setTest(null); runTest.mutate(draft) }} testing={runTest.isPending}
@@ -135,10 +142,14 @@ export default function AdminOrganizationsPage() {
   return (
     <div className="page" style={{ maxWidth: 1100 }}>
       <div className="section-heading" style={{ marginTop: 12 }}>
-        <h1 className="display" style={{ fontSize: 30, fontWeight: 700 }}>Organizacije</h1>
-        <button type="button" className="btn btn-primary" onClick={() => { setDraft({ ...EMPTY, dragon_color: freeColor(orgs) }); setErrors({}); setNotice(null) }}>
-          <Plus size={16} aria-hidden="true" /> Dodaj organizaciju
-        </button>
+        <h1 className="display" style={{ fontSize: 30, fontWeight: 700 }}>
+          {siteAdmin ? 'Organizacije' : (orgs?.length ?? 0) > 1 ? 'Moje organizacije' : 'Moja organizacija'}
+        </h1>
+        {siteAdmin && (
+          <button type="button" className="btn btn-primary" onClick={() => { setDraft({ ...EMPTY, dragon_color: freeColor(orgs) }); setErrors({}); setNotice(null) }}>
+            <Plus size={16} aria-hidden="true" /> Dodaj organizaciju
+          </button>
+        )}
       </div>
 
       {notice && (
@@ -164,15 +175,17 @@ export default function AdminOrganizationsPage() {
                 </div>
               </div>
               <button type="button" className="icon-btn" onClick={() => { setDraft({ ...o }); setErrors({}); setNotice(null) }} aria-label={`Izmeni ${o.name}`}><Pencil size={16} /></button>
-              <button
-                type="button"
-                className="icon-btn"
-                style={{ color: '#FFB3C1' }}
-                aria-label={`Obriši ${o.name}`}
-                onClick={() => { if (confirm(`Obrisati organizaciju "${o.name}"?`)) remove.mutate(o.id) }}
-              >
-                <Trash2 size={16} />
-              </button>
+              {siteAdmin && (
+                <button
+                  type="button"
+                  className="icon-btn"
+                  style={{ color: '#FFB3C1' }}
+                  aria-label={`Obriši ${o.name}`}
+                  onClick={() => { if (confirm(`Obrisati organizaciju "${o.name}"?`)) remove.mutate(o.id) }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -181,8 +194,10 @@ export default function AdminOrganizationsPage() {
   )
 }
 
-function Editor({ draft, set, errors, formMsg, test, onBack, onLoad, loading, onTest, testing, onSave, saving }: {
+function Editor({ draft, set, errors, formMsg, test, siteAdmin, backLabel, onBack, onLoad, loading, onTest, testing, onSave, saving }: {
   draft: Draft
+  siteAdmin: boolean
+  backLabel: string
   set: (k: keyof AdminOrganization, v: unknown) => void
   errors: Record<string, string>
   formMsg: string | null
@@ -204,7 +219,7 @@ function Editor({ draft, set, errors, formMsg, test, onBack, onLoad, loading, on
   return (
     <div className="page">
       <button type="button" onClick={onBack} className="back-rail" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginLeft: -12, borderRadius: 10, color: 'var(--text-tertiary)', background: 'none', border: 0, fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>
-        <ArrowLeft size={16} aria-hidden="true" /> Organizacije
+        <ArrowLeft size={16} aria-hidden="true" /> {backLabel}
       </button>
       <h1 className="display" style={{ fontSize: 30, fontWeight: 700, margin: '6px 0 22px' }}>{draft.id ? `Izmena: ${draft.name}` : 'Nova organizacija'}</h1>
 
@@ -221,15 +236,17 @@ function Editor({ draft, set, errors, formMsg, test, onBack, onLoad, loading, on
               <Field label="Naziv" error={errors.name}>
                 <input style={inputStyle} value={draft.name ?? ''} onChange={e => set('name', e.target.value)} />
               </Field>
-              <Field label="Slug" hint="Ostavi prazno da se izvede iz naziva" error={errors.slug}>
-                <input style={inputStyle} value={draft.slug ?? ''} onChange={e => set('slug', e.target.value)} placeholder="npr. pab-kviz-8x8" />
+              <Field label="Slug" hint={siteAdmin ? 'Ostavi prazno da se izvede iz naziva' : 'Adresu stranice menja administrator sajta'} error={errors.slug}>
+                <input style={{ ...inputStyle, opacity: siteAdmin ? 1 : 0.6 }} value={draft.slug ?? ''} onChange={e => set('slug', e.target.value)} placeholder="npr. pab-kviz-8x8" disabled={!siteAdmin} />
               </Field>
-              <Field label="Instagram handle" hint="Bez @. „Učitaj“ popunjava ostala polja i logo." error={errors.instagram_handle}>
+              <Field label="Instagram handle" hint={siteAdmin ? 'Bez @. „Učitaj“ popunjava ostala polja i logo.' : 'Nalog sa kog se čitaju kvizovi menja administrator sajta'} error={errors.instagram_handle}>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <input style={inputStyle} value={draft.instagram_handle ?? ''} onChange={e => set('instagram_handle', e.target.value)} placeholder="pabkviz8x8" />
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={onLoad} disabled={!draft.instagram_handle || loading}>
-                    <Download size={15} aria-hidden="true" />{loading ? '…' : 'Učitaj'}
-                  </button>
+                  <input style={{ ...inputStyle, opacity: siteAdmin ? 1 : 0.6 }} value={draft.instagram_handle ?? ''} onChange={e => set('instagram_handle', e.target.value)} placeholder="pabkviz8x8" disabled={!siteAdmin} />
+                  {siteAdmin && (
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={onLoad} disabled={!draft.instagram_handle || loading}>
+                      <Download size={15} aria-hidden="true" />{loading ? '…' : 'Učitaj'}
+                    </button>
+                  )}
                 </div>
               </Field>
               <Field label="Logo URL" hint="Logo ide automatski na majicu zmaja." error={errors.logo_url}>
@@ -324,10 +341,12 @@ function Editor({ draft, set, errors, formMsg, test, onBack, onLoad, loading, on
           )}
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-secondary" style={{ marginRight: 'auto' }} onClick={onTest} disabled={!draft.instagram_handle || testing} title="Pokaži šta bi sync izvukao, bez upisa">
-              <FlaskConical size={16} aria-hidden="true" />{testing ? 'Testiram…' : 'Probaj sync'}
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={onBack}>Odustani</button>
+            {siteAdmin && (
+              <button type="button" className="btn btn-secondary" style={{ marginRight: 'auto' }} onClick={onTest} disabled={!draft.instagram_handle || testing} title="Pokaži šta bi sync izvukao, bez upisa">
+                <FlaskConical size={16} aria-hidden="true" />{testing ? 'Testiram…' : 'Probaj sync'}
+              </button>
+            )}
+            <button type="button" className="btn btn-secondary" style={siteAdmin ? undefined : { marginLeft: 'auto' }} onClick={onBack}>Odustani</button>
             <button type="button" className="btn btn-primary" onClick={onSave} disabled={saving}>{saving ? 'Čuvanje…' : 'Sačuvaj'}</button>
           </div>
         </div>

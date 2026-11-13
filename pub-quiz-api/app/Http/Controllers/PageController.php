@@ -196,7 +196,9 @@ class PageController extends Controller
         // Built by hand rather than with abort(404): this route is in the web
         // group, where the exception handler renders an HTML error page.
         if ($request->is('api/*')) {
-            return response()->json(['message' => 'Not Found.'], 404);
+            // Same body as every other API 404 (bootstrap/app.php), so an
+            // unknown route cannot be told apart from a hidden admin one.
+            return response()->json(['message' => 'Nije pronađeno.'], 404);
         }
 
         return $this->notFound('/' . ltrim($request->path(), '/'));

@@ -225,7 +225,7 @@ export default function QuizDetailPage() {
                   sub={quiz.location && quiz.address ? quiz.address : undefined}
                 />
               )}
-              <Fact icon={<Coins size={18} />} label="Kotizacija" value={formatPrice(quiz.entry_fee)} />
+              <Fact icon={<Coins size={18} />} label="Kotizacija" value={quiz.entry_fee != null ? formatPrice(quiz.entry_fee) : 'Info u objavi'} />
               {team && <Fact icon={<Users size={18} />} label="Ekipa" value={team} />}
               {phone && <Fact icon={<Phone size={18} />} label="Kontakt" value={<a href={`tel:${phone}`} style={{ color: 'var(--lime)', textDecoration: 'none' }}>{phone}</a>} />}
             </div>
@@ -280,12 +280,19 @@ export default function QuizDetailPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
               {more.map(q => (
                 <Link key={q.id} to={`/kvizovi/${q.slug}`} className="lift" style={{ display: 'flex', gap: 14, padding: 12, borderRadius: 18, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)' }}>
-                  {q.cover_image_url
-                    ? <img src={q.cover_image_url} alt="" loading="lazy" style={{ width: 80, aspectRatio: '4 / 5', objectFit: 'cover', borderRadius: 12, flex: 'none' }} />
-                    : <span style={{ width: 80, aspectRatio: '4 / 5', borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tint(accent, 0.15) }}><OrgDragon org={org} size={64} animated={false} /></span>}
+                  {/* Fixed-size frame with the dragon underneath: a poster that
+                      fails to load is hidden and the dragon shows instead of a
+                      collapsed broken-image box. */}
+                  <span style={{ position: 'relative', width: 80, height: 100, borderRadius: 12, overflow: 'hidden', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tint(accent, 0.15) }}>
+                    <OrgDragon org={org} size={64} animated={false} />
+                    {q.cover_image_url && (
+                      <img src={q.cover_image_url} alt="" loading="lazy" onError={e => { e.currentTarget.style.display = 'none' }}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
+                  </span>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, paddingTop: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lime)' }}>{shortDate(q.quiz_date)}{q.quiz_time ? ` · ${formatTime(q.quiz_time)}` : ''}</span>
-                    <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2 }}>{cleanTitle(q.title)}</span>
+                    <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{cleanTitle(q.title)}</span>
                     {q.location && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.location}</span>}
                   </span>
                 </Link>

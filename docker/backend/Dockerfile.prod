@@ -6,6 +6,13 @@ RUN a2enmod rewrite && \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# No version banners: X-Powered-By: PHP/x.y.z and Apache's signature on its own
+# error pages tell an attacker which known bugs to try. The zz- prefix makes
+# this load after Debian's security.conf, which sets ServerTokens OS.
+RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/zz-security.ini && \
+    printf "ServerTokens Prod\nServerSignature Off\nTraceEnable Off\n" > /etc/apache2/conf-available/zz-hardening.conf && \
+    a2enconf zz-hardening
+
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html

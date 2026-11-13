@@ -108,7 +108,10 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {quiz.quiz_time && <span style={pill}>{formatTime(quiz.quiz_time)}</span>}
-          <span style={{ ...pill, background: 'rgba(182,242,62,0.12)', color: 'var(--lime)', fontWeight: 600 }}>{formatPrice(quiz.entry_fee)}</span>
+          {/* No fee means the post did not say, not that the quiz is free. */}
+          {quiz.entry_fee != null && (
+            <span style={{ ...pill, background: 'rgba(182,242,62,0.12)', color: 'var(--lime)', fontWeight: 600 }}>{formatPrice(quiz.entry_fee)}</span>
+          )}
           {team && <span style={pill}>{team}</span>}
         </div>
         {(quiz.location || quiz.address) && (

@@ -20,6 +20,8 @@ import LoadingScreen from './components/LoadingScreen'
 const MapPage = lazy(() => import('./pages/MapPage'))
 const AdminQuizzesPage = lazy(() => import('./pages/admin/AdminQuizzesPage'))
 const AdminOrganizationsPage = lazy(() => import('./pages/admin/AdminOrganizationsPage'))
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'))
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -45,8 +47,10 @@ function AppShell() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profil" element={<RequireAuth><ProfilePage /></RequireAuth>} />
-          <Route path="/admin/kvizovi" element={<RequireAdmin><AdminQuizzesPage /></RequireAdmin>} />
-          <Route path="/admin/organizacije" element={<RequireAdmin><AdminOrganizationsPage /></RequireAdmin>} />
+          <Route path="/admin/kvizovi" element={<RequireAdmin level="manager"><AdminQuizzesPage /></RequireAdmin>} />
+          <Route path="/admin/organizacije" element={<RequireAdmin level="manager"><AdminOrganizationsPage /></RequireAdmin>} />
+          <Route path="/admin/korisnici" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
+          <Route path="/admin/audit" element={<RequireAdmin><AdminAuditPage /></RequireAdmin>} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>

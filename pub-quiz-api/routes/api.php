@@ -17,7 +17,7 @@ Route::get('/quizzes/{slug}/calendar.ics', [QuizController::class, 'calendar']);
 Route::get('/organizations', [OrganizationController::class, 'index']);
 Route::get('/organizations/{slug}', [OrganizationController::class, 'show']);
 
-Route::post('/instagram/sync', [InstagramSyncController::class, 'sync']);
+Route::post('/instagram/sync', [InstagramSyncController::class, 'sync'])->middleware('throttle:5,1');
 
 // Auth - rate limited (throttle: max attempts per minute)
 Route::middleware('throttle:10,1')->group(function () {
@@ -45,9 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Admin. Both middlewares matter: auth:sanctum establishes who is calling,
-// admin decides whether they may. Hiding these in the frontend would not, since
-// the routes are visible to anyone who reads the JavaScript bundle.
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+// the second decides whether they may. Hiding these in the frontend would not,
+// since the routes are visible to anyone who reads the JavaScript bundle.
+//
+// 'manager' admits site admins and organization admins. The controllers then
+// limit an organization admin to their own organizations, record by record.
+Route::middleware(['auth:sanctum', 'manager'])->prefix('admin')->group(function () {
     Route::get('/quizzes', [Admin\AdminQuizController::class, 'index']);
     Route::post('/quizzes', [Admin\AdminQuizController::class, 'store']);
     Route::get('/quizzes/{id}', [Admin\AdminQuizController::class, 'show']);
@@ -55,9 +58,20 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('/quizzes/{id}', [Admin\AdminQuizController::class, 'destroy']);
 
     Route::get('/organizations', [Admin\AdminOrganizationController::class, 'index']);
+    Route::put('/organizations/{id}', [Admin\AdminOrganizationController::class, 'update']);
+});
+
+// Site admin only: creating and deleting organizations, the paid scraper
+// previews, user roles and the audit log.
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     Route::post('/organizations/preview', [Admin\AdminOrganizationController::class, 'preview']);
     Route::post('/organizations/test-sync', [Admin\AdminOrganizationController::class, 'testSync']);
     Route::post('/organizations', [Admin\AdminOrganizationController::class, 'store']);
-    Route::put('/organizations/{id}', [Admin\AdminOrganizationController::class, 'update']);
     Route::delete('/organizations/{id}', [Admin\AdminOrganizationController::class, 'destroy']);
+
+    Route::get('/users', [Admin\AdminUserController::class, 'index']);
+    Route::put('/users/{id}/organizations', [Admin\AdminUserController::class, 'setOrganizations'])->whereNumber('id');
+
+    Route::get('/audit', [Admin\AdminAuditController::class, 'index']);
+    Route::post('/audit/{id}/restore', [Admin\AdminAuditController::class, 'restore'])->whereNumber('id');
 });

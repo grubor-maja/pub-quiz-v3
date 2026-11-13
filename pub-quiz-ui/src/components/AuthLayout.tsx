@@ -14,8 +14,11 @@ export default function AuthLayout({ mode, children }: Props) {
     <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 'calc(100vh - 64px)' }}>
       <section className="only-desktop" style={{
         flex: '1 1 480px', padding: '48px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 28,
-        background: 'radial-gradient(circle at 30% 35%, rgba(76,29,149,0.55), rgba(7,8,24,0) 65%)',
+        background: 'radial-gradient(circle at 50% 45%, rgba(76,29,149,0.55), rgba(7,8,24,0) 65%)',
       }}>
+        {/* Centered in its half, like the form in the other half; on a wide
+            screen it used to hug the window's left edge. */}
+        <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
         <div>
           <p className="display anim-up" style={{ fontSize: 'clamp(36px, 4vw, 54px)', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.035em', marginBottom: 12 }}>Ekipa te čeka.</p>
           <p className="anim-up" style={{ fontSize: 17, color: 'var(--text-tertiary)', maxWidth: 420, animationDelay: '0.1s' }}>
@@ -26,6 +29,7 @@ export default function AuthLayout({ mode, children }: Props) {
           <span className="anim-up" style={{ animationDelay: '0.2s' }}><Zmaj boja="tirkiz" rekvizit="lopta" majica="plava" size={150} /></span>
           <span className="anim-up" style={{ animationDelay: '0.35s', marginLeft: -20 }}><Zmaj size={190} /></span>
           <span className="anim-up" style={{ animationDelay: '0.5s', marginLeft: -20 }}><Zmaj boja="koral" rekvizit="sijalica" majica="bela" size={150} /></span>
+        </div>
         </div>
       </section>
 

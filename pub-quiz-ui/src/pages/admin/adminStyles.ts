@@ -38,3 +38,8 @@ export const modalStyle: CSSProperties = {
 export const gridStyle: CSSProperties = {
   display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14,
 }
+
+/** The API's own message from a failed request, if it sent one. */
+export function errorMessage(e: unknown): string | undefined {
+  return (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+}

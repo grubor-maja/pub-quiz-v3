@@ -63,13 +63,19 @@ export default function OrganizationsPage() {
   )
 }
 
+/** Smaller type for longer names; past ~24 characters the ellipsis takes over. */
+function nameSize(name: string): number {
+  const n = name.length
+  return n <= 14 ? 24 : n <= 18 ? 21 : n <= 22 ? 18 : 16
+}
+
 function OrgCard({ org, index }: { org: Organization; index: number }) {
   const accent = accentOf(org)
   const count = org.published_quizzes_count ?? 0
 
   return (
     <article className="anim-up lift" style={{
-      position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+      position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', height: '100%',
       padding: '22px 20px', borderRadius: 26, background: tint(accent, 0.07), border: `1px solid ${tint(accent, 0.22)}`,
       animationDelay: `${Math.min(index, 10) * 0.08}s`,
     }}>
@@ -78,10 +84,15 @@ function OrgCard({ org, index }: { org: Organization; index: number }) {
           <span aria-hidden="true" style={{ position: 'absolute', top: 14, width: 190, height: 190, borderRadius: '50%', background: tint(accent, 0.14) }} />
           <span style={{ position: 'relative' }}><OrgDragon org={org} size={210} /></span>
         </span>
-        <span className="display" style={{ marginTop: 8, fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}>{org.name}</span>
+        {/* One line at a size that fits the name, so every card is the same
+            height and the follow button sits in the same place on each. */}
+        <span className="display" title={org.name} style={{
+          marginTop: 8, maxWidth: '100%', fontSize: nameSize(org.name), lineHeight: '32px', height: 32, fontWeight: 700, letterSpacing: '-0.02em',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{org.name}</span>
         <span style={{ marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>{count} {kvizWord(count)} na sajtu</span>
       </Link>
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 'auto', paddingTop: 16 }}>
         <SubscribeButton slug={org.slug} isSubscribed={org.is_subscribed ?? false} org={org} color={accent} />
       </div>
     </article>
