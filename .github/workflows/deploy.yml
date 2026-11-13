@@ -39,7 +39,11 @@ jobs:
           extensions: mbstring, pdo_sqlite, bcmath, gd, zip, exif
           coverage: none
       - name: install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        # Both directories are gitignored, so a fresh checkout lacks them and
+        # composer's package:discover step fails without bootstrap/cache.
+        run: |
+          mkdir -p bootstrap/cache storage/logs
+          composer install --no-interaction --prefer-dist --no-progress
       - name: prepare env
         run: |
           cp .env.example .env
