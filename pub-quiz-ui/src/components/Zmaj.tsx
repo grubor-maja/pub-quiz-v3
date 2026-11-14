@@ -15,6 +15,11 @@ interface Props {
   animated?: boolean
   /** Eyes follow the mouse and blink at random. Meant for the big dragons on the home and login pages. */
   gleda?: boolean
+  /**
+   * A passing mood, for the login form: 'skriva' covers its eyes (password),
+   * 'ljut' frowns and fumes (wrong password), 'srecan' hops and waves (success).
+   */
+  raspolozenje?: 'skriva' | 'ljut' | 'srecan'
   title?: string
   className?: string
 }
@@ -33,6 +38,7 @@ export default function Zmaj({
   oblik = 'ceo',
   animated = true,
   gleda = false,
+  raspolozenje,
   title,
   className = '',
 }: Props) {
@@ -48,6 +54,7 @@ export default function Zmaj({
   const head = oblik === 'glava'
   const height = head ? size : Math.round((size * 215) / 200)
   const angry = rekvizit === 'ljutko'
+  const frown = angry || raspolozenje === 'ljut'
 
   return (
     <svg
@@ -58,7 +65,7 @@ export default function Zmaj({
       role={title ? 'img' : undefined}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      className={`${animated ? 'zmaj-anim ' : ''}${looks ? 'zmaj-gleda ' : ''}${className}`}
+      className={`${animated ? 'zmaj-anim ' : ''}${looks ? 'zmaj-gleda ' : ''}${raspolozenje ? `zmaj-${raspolozenje} ` : ''}${className}`}
       style={{ display: 'block', flexShrink: 0 }}
     >
       <defs>
@@ -150,7 +157,7 @@ export default function Zmaj({
           <ellipse cx="100" cy="103" rx="31" ry="17" fill={c1} />
           <ellipse cx="91" cy="98" rx="2.6" ry="2" fill={c5} />
           <ellipse cx="109" cy="98" rx="2.6" ry="2" fill={c5} />
-          <path d={angry ? 'M90 112 Q100 108 110 112' : 'M88 109 Q100 118 112 109'} stroke={c5} strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d={frown ? 'M90 112 Q100 108 110 112' : 'M88 109 Q100 118 112 109'} stroke={c5} strokeWidth="3" fill="none" strokeLinecap="round" />
           <ellipse cx="64" cy="100" rx="6" ry="3.5" fill={h1} opacity="0.55" />
           <ellipse cx="136" cy="100" rx="6" ry="3.5" fill={h1} opacity="0.55" />
           {angry && (
@@ -165,9 +172,32 @@ export default function Zmaj({
           <rect x="58" y="65" width="36" height="27" rx="10" fill="#fff" fillOpacity="0.15" stroke="#0A0B1E" strokeWidth="5" />
           <rect x="106" y="65" width="36" height="27" rx="10" fill="#fff" fillOpacity="0.15" stroke="#0A0B1E" strokeWidth="5" />
           <path d="M94 76 Q100 71 106 76" stroke="#0A0B1E" strokeWidth="5" fill="none" />
-          {angry && <path d="M60 58 L90 64 M140 58 L110 64" stroke="#0A0B1E" strokeWidth="5" strokeLinecap="round" />}
+          {frown && <path d="M60 58 L90 64 M140 58 L110 64" stroke="#0A0B1E" strokeWidth="5" strokeLinecap="round" />}
           <g className="z-look"><g className="z-blink"><circle cx="77" cy="79" r="7" fill="#0A0B1E" /><circle cx="79.6" cy="76.4" r="2.4" fill="#fff" /></g></g>
           <g className="z-look"><g className="z-blink"><circle cx="123" cy="79" r="7" fill="#0A0B1E" /><circle cx="125.6" cy="76.4" r="2.4" fill="#fff" /></g></g>
+          {/* Happy eyes, shown instead of the pupils while srecan. */}
+          <path className="z-happy" d="M68 82 Q77 71 86 82 M114 82 Q123 71 132 82" stroke="#0A0B1E" strokeWidth="4.5" fill="none" strokeLinecap="round" />
+          </g>
+          {raspolozenje === 'ljut' && (
+            <g className="z-smoke" fill="#C9CCEA">
+              <circle cx="90" cy="96" r="3.5" />
+              <circle cx="110" cy="96" r="3.5" />
+            </g>
+          )}
+          {/* Paws over the eyes for raspolozenje="skriva", like the see-no-evil
+              monkey; out of sight otherwise. */}
+          <g className="z-cover">
+            <path d="M64 138 Q46 116 66 96" stroke={c3} strokeWidth="14" fill="none" strokeLinecap="round" />
+            <path d="M136 138 Q154 116 134 96" stroke={c4} strokeWidth="14" fill="none" strokeLinecap="round" />
+            {[76, 124].map((x) => (
+              <g key={x}>
+                <circle cx={x - 13} cy={67} r={6.5} fill={c2} stroke={c4} strokeWidth="2" />
+                <circle cx={x} cy={62} r={7} fill={c2} stroke={c4} strokeWidth="2" />
+                <circle cx={x + 13} cy={67} r={6.5} fill={c2} stroke={c4} strokeWidth="2" />
+                <ellipse cx={x} cy={83} rx={20} ry={17} fill={c2} stroke={c4} strokeWidth="2" />
+                <ellipse cx={x} cy={88} rx={10} ry={7} fill={c1} opacity="0.7" />
+              </g>
+            ))}
           </g>
         </g>
       </g>

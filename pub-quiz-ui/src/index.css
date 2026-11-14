@@ -156,6 +156,24 @@ a, button, [role="button"], input, textarea, select,
 .zmaj-gleda.z-blinking .z-blink { animation: z-blink-once 0.17s ease-in-out; }
 @keyframes z-blink-once { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
 
+/* Moods, for the login form (raspolozenje on <Zmaj>). skriva: wings rise over
+   the glasses. ljut: frown, head shake, smoke from the nostrils. srecan:
+   happy closed eyes, hops, waves fast. */
+.z-happy { opacity: 0; }
+.z-cover { opacity: 0; transform: translateY(50px); transition: transform 0.35s var(--ease-bounce), opacity 0.2s ease-out; }
+.zmaj-skriva .z-cover { opacity: 1; transform: none; }
+.zmaj-skriva .z-wave { opacity: 0; }
+.zmaj-srecan .z-happy { opacity: 1; }
+.zmaj-srecan .z-look { opacity: 0; }
+.zmaj-anim.zmaj-srecan .z-bob { animation: z-hop 0.5s var(--ease) infinite; }
+.zmaj-anim.zmaj-srecan .z-wave { animation-duration: 0.3s; }
+.zmaj-anim.zmaj-ljut .z-head { animation: z-shake 0.38s ease-in-out 2; }
+.zmaj-ljut .z-smoke circle { transform-box: fill-box; transform-origin: center; animation: z-smoke 1s ease-out infinite; --dx: -10px; }
+.zmaj-ljut .z-smoke circle + circle { --dx: 10px; animation-delay: 0.5s; }
+@keyframes z-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+@keyframes z-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+@keyframes z-smoke { from { opacity: 0.9; transform: translate(0, 0) scale(0.5); } to { opacity: 0; transform: translate(var(--dx), 8px) scale(2); } }
+
 /* ---------------------------------------------------------------
  * Layout
  * --------------------------------------------------------------- */
