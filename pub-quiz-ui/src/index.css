@@ -606,3 +606,59 @@ a, button, [role="button"], input, textarea, select,
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ phone fixes
+   From the mobile QA pass (14.11.2026). */
+
+/* The filter sheet is portalled to <body>; the tab bar would still sit over
+   its bottom buttons, so it steps aside while the sheet is open. */
+body.sheet-open .tabbar { display: none !important; }
+.sheet { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+
+/* Quiz card: the "when" line in the body only shows in the phone layout,
+   where the poster is too small for a badge. */
+.quiz-card-when { display: none; align-items: center; }
+
+@media (max-width: 599px) {
+  /* One card per row, poster left and details right: in two columns the
+     organizer and the title were cut off on every card. */
+  .card-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px; }
+  .quiz-card { flex-direction: row !important; border-radius: 16px !important; }
+  .quiz-card .quiz-card-media { width: 104px; flex: none; align-self: stretch; aspect-ratio: auto !important; min-height: 130px; }
+  .quiz-card .quiz-card-media svg { width: 78px; height: auto; }
+  .quiz-card .quiz-card-badge,
+  .quiz-card .quiz-card-announced,
+  .quiz-card .quiz-card-time { display: none !important; }
+  .quiz-card .quiz-card-when { display: flex; }
+  .quiz-card .quiz-card-body { padding: 10px 12px 12px !important; gap: 8px !important; }
+  .quiz-card .quiz-card-title { font-size: 16.5px !important; -webkit-line-clamp: 3 !important; }
+
+  /* Organizers: two smaller cards a row instead of one dragon per screen. */
+  .org-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+  .org-card { padding: 14px 10px !important; border-radius: 20px !important; }
+  .org-card .org-card-dragon svg { width: 112px; height: auto; }
+  .org-card .org-card-halo { width: 100px !important; height: 100px !important; top: 8px !important; }
+  .org-card .org-card-name {
+    font-size: 15px !important; line-height: 20px !important; height: 40px !important;
+    white-space: normal !important; display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 899px) {
+  /* The hero shrinks to its heading and button, so quizzes show on the
+     first screen. */
+  .home-hero { padding: 14px 0 18px !important; gap: 0 !important; }
+  .home-hero h1 { font-size: 30px !important; margin: 10px 0 12px !important; line-height: 1.05 !important; }
+  /* Floating shapes drifted over the tabs and read as rendering glitches. */
+  .float-shape { display: none !important; }
+  /* Auth forms start at the top instead of the middle of a tall page, with
+     a smaller dragon: centered, the register button landed behind the tab bar. */
+  .auth-form-area { align-items: flex-start !important; padding: 14px 12px calc(110px + env(safe-area-inset-bottom, 0px)) !important; }
+  .auth-card { padding: 20px !important; }
+  .auth-card > .only-mobile { display: flex; }
+  .auth-card > .only-mobile svg { width: 72px; height: auto; }
+}
+
+/* Tap targets of at least 44px. */
+.tap-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+.leaflet-touch .leaflet-bar a { width: 44px !important; height: 44px !important; line-height: 44px !important; font-size: 22px !important; }

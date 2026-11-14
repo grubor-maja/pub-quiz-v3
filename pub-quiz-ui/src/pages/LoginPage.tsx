@@ -95,12 +95,12 @@ export default function LoginPage() {
             fontSize: 14,
             textAlign: 'center',
           }}>
-            <Link to="/forgot-password" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
+            <Link to="/forgot-password" className="tap-link" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
               Zaboravio si lozinku?
             </Link>
             <div style={{ color: 'var(--text-muted)' }}>
               Nemaš nalog?{' '}
-              <Link to="/register" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
+              <Link to="/register" className="tap-link" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
                 Registruj se
               </Link>
             </div>

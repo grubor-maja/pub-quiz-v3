@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LocalDate;
 use App\Models\Organization;
 use App\Models\Quiz;
 use Illuminate\Http\JsonResponse;
@@ -41,9 +42,9 @@ class QuizController extends Controller
 
         // Default: only upcoming quizzes (today onward). Archive mode: only past ones.
         if ($archive) {
-            $query->whereDate('quiz_date', '<', now()->toDateString());
+            $query->whereDate('quiz_date', '<', LocalDate::today());
         } else {
-            $query->whereDate('quiz_date', '>=', now()->toDateString());
+            $query->whereDate('quiz_date', '>=', LocalDate::today());
         }
 
         // "Near me": distance in km from the visitor's position, for the radius
@@ -160,7 +161,7 @@ class QuizController extends Controller
         $query = Quiz::published()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->where('quiz_date', '>=', now()->subDay())
+            ->whereDate('quiz_date', '>=', LocalDate::today())
             ->with('organization:'.Organization::CARD_COLUMNS);
 
         if ($request->filled('org')) {
@@ -179,7 +180,7 @@ class QuizController extends Controller
         }
 
         $quizzes = $query->orderBy('quiz_date', 'asc')
-            ->get(['id', 'title', 'slug', 'quiz_date', 'quiz_time', 'location', 'address', 'entry_fee', 'latitude', 'longitude', 'cover_image_url', 'organization_id']);
+            ->get(['id', 'title', 'slug', 'quiz_date', 'quiz_time', 'location', 'address', 'city', 'entry_fee', 'latitude', 'longitude', 'cover_image_url', 'organization_id']);
 
         return response()->json(['data' => $quizzes]);
     }

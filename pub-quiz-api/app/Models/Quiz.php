@@ -14,7 +14,7 @@ class Quiz extends Model
 
     protected $fillable = [
         'organization_id', 'title', 'slug', 'description',
-        'quiz_date', 'quiz_time', 'location', 'address',
+        'quiz_date', 'quiz_time', 'location', 'address', 'city',
         'entry_fee', 'min_team_members', 'max_team_members',
         'contact_phone', 'cover_image_url', 'instagram_post_url', 'status',
     ];

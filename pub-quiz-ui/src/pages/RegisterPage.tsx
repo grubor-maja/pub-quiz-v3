@@ -133,7 +133,7 @@ export default function RegisterPage() {
             color: 'var(--text-muted)',
           }}>
             Već imaš nalog?{' '}
-            <Link to="/login" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
+            <Link to="/login" className="tap-link" style={{ color: 'var(--accent-amber)', textDecoration: 'none' }}>
               Prijavi se
             </Link>
           </div>

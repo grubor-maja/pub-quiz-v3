@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LocalDate;
 use App\Models\Organization;
 use App\Models\Quiz;
 use Illuminate\Http\Response;
@@ -39,7 +40,7 @@ class SitemapController extends Controller
             ->get(['slug', 'quiz_date', 'updated_at']);
 
         foreach ($quizzes as $quiz) {
-            $upcoming = $quiz->quiz_date && $quiz->quiz_date->isFuture();
+            $upcoming = $quiz->quiz_date && $quiz->quiz_date->toDateString() >= LocalDate::today();
             $urls[] = [
                 'loc' => $base . '/kvizovi/' . $quiz->slug,
                 'lastmod' => $quiz->updated_at?->toAtomString(),

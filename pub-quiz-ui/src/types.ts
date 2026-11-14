@@ -24,6 +24,8 @@ export interface Quiz {
   quiz_time: string | null
   location: string | null
   address: string | null
+  /** Filled from the venue's coordinates; null until the geocoder has run. */
+  city?: string | null
   entry_fee: number | null
   min_team_members: number | null
   max_team_members: number | null

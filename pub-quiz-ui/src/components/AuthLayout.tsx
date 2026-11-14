@@ -33,8 +33,8 @@ export default function AuthLayout({ mode, children }: Props) {
         </div>
       </section>
 
-      <section style={{ flex: '1 1 440px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px 120px' }}>
-        <div className="anim-up" style={{
+      <section className="auth-form-area" style={{ flex: '1 1 440px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px 120px' }}>
+        <div className="anim-up auth-card" style={{
           width: '100%', maxWidth: 440, padding: 28, borderRadius: 26, background: 'rgba(17,19,46,0.9)',
           border: '1px solid var(--border-default)', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.7)', animationDelay: '0.1s',
         }}>

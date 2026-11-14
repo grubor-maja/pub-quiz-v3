@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { formatTime, formatPrice, teamSizeShort, shortDate, isToday, cleanTitle } from '../lib/utils'
+import { formatTime, formatPrice, teamSizeShort, shortDate, isToday, cleanTitle, placeLabel, shortOrgName } from '../lib/utils'
 import { accentOf, tint } from '../lib/dragon'
 import type { Quiz } from '../types'
 import HeartButton from './HeartButton'
@@ -28,6 +28,11 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
   const tonight = isToday(quiz.quiz_date) && !cancelled
   const accent = accentOf(quiz.organization)
   const title = cleanTitle(quiz.title)
+  const place = placeLabel(quiz)
+  const time = formatTime(quiz.quiz_time)
+  // One line for "when", used on the phone layout where the poster is too
+  // small for a badge: "Večeras · 20:30", "Sub 14.11. · 20:30".
+  const when = [tonight ? 'Večeras' : quiz.quiz_date ? shortDate(quiz.quiz_date) : null, time || null].filter(Boolean).join(' · ')
 
   return (
     <Link
@@ -45,7 +50,7 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
         animationDelay: `${Math.min(index, 12) * 0.06}s`,
       }}
     >
-      <div style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden', filter: cancelled ? 'grayscale(0.9) brightness(0.6)' : undefined }}>
+      <div className="quiz-card-media" style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden', filter: cancelled ? 'grayscale(0.9) brightness(0.6)' : undefined }}>
         {quiz.cover_image_url ? (
           <img className="quiz-card-img" src={quiz.cover_image_url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
@@ -57,24 +62,25 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
             background: `radial-gradient(circle at 50% 40%, ${tint(accent, 0.35)}, ${tint(accent, 0.06)} 70%), #0D0F2A`,
           }}>
             <OrgDragon org={quiz.organization} size={130} animated={false} />
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--text-muted)' }}>NAJAVLJENO</span>
+            <span className="quiz-card-announced" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', color: 'var(--text-muted)' }}>NAJAVLJENO</span>
           </div>
         )}
-        {quiz.quiz_date && (
-          <span style={{
+        {/* One badge in the corner. "Večeras" replaces the date rather than
+            sitting next to it: on a narrow card the two overlapped. */}
+        {tonight ? (
+          <span className="quiz-card-badge" style={{
+            position: 'absolute', left: 10, top: 10, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 10,
+            background: 'var(--lime)', color: 'var(--on-lime)', fontSize: 12, fontWeight: 700,
+          }}>
+            <span className="live-dot dark" />VEČERAS
+          </span>
+        ) : quiz.quiz_date && (
+          <span className="quiz-card-badge" style={{
             position: 'absolute', left: 10, top: 10, padding: '6px 10px', borderRadius: 10,
             background: 'rgba(7,8,24,0.75)', backdropFilter: 'blur(8px)', border: '1px solid rgba(182,242,62,0.3)',
             fontSize: 13, fontWeight: 600, color: '#E9FFC2', textDecoration: cancelled ? 'line-through' : undefined,
           }}>
             {shortDate(quiz.quiz_date)}
-          </span>
-        )}
-        {tonight && (
-          <span style={{
-            position: 'absolute', right: 10, top: 10, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 10,
-            background: 'var(--lime)', color: 'var(--on-lime)', fontSize: 12, fontWeight: 700,
-          }}>
-            <span className="live-dot dark" />VEČERAS
           </span>
         )}
         {cancelled && (
@@ -87,16 +93,24 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
         )}
       </div>
 
-      <div style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+      <div className="quiz-card-body" style={{ padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
           <div style={{ minWidth: 0 }}>
-            {!hideOrg && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 5 }}>
-                <OrgBadge org={quiz.organization} size={22} />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quiz.organization.name}</span>
+            {when && (
+              <span className="quiz-card-when" style={{
+                fontSize: 13, fontWeight: 700, color: tonight ? 'var(--lime)' : '#E9FFC2', marginBottom: 4,
+                textDecoration: cancelled ? 'line-through' : undefined,
+              }}>
+                {tonight && <span className="live-dot" style={{ marginRight: 6 }} />}{when}
               </span>
             )}
-            <h3 className="display" style={{
+            {!hideOrg && (
+              <span title={quiz.organization.name} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 5 }}>
+                <OrgBadge org={quiz.organization} size={22} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shortOrgName(quiz.organization.name)}</span>
+              </span>
+            )}
+            <h3 className="display quiz-card-title" style={{
               fontSize: 18, fontWeight: 700, lineHeight: 1.2, margin: 0,
               overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
               textDecoration: cancelled ? 'line-through' : undefined, color: cancelled ? 'var(--text-muted)' : undefined,
@@ -107,16 +121,16 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
           <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={18} style={{ margin: '-4px -4px 0 0' }} />
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {quiz.quiz_time && <span style={pill}>{formatTime(quiz.quiz_time)}</span>}
+          {time && <span className="quiz-card-time" style={pill}>{time}</span>}
           {/* No fee means the post did not say, not that the quiz is free. */}
           {quiz.entry_fee != null && (
             <span style={{ ...pill, background: 'rgba(182,242,62,0.12)', color: 'var(--lime)', fontWeight: 600 }}>{formatPrice(quiz.entry_fee)}</span>
           )}
           {team && <span style={pill}>{team}</span>}
         </div>
-        {(quiz.location || quiz.address) && (
+        {place && (
           <span style={{ fontSize: 14, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {quiz.location ?? quiz.address}
+            {place}
           </span>
         )}
       </div>

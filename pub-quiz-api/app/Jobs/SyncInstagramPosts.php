@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Support\LocalDate;
 use App\Models\InstagramImport;
 use App\Models\Organization;
 use App\Models\Quiz;
@@ -325,7 +326,7 @@ class SyncInstagramPosts implements ShouldQueue
      */
     private function isStillRelevant(array $candidates): bool
     {
-        $today = now()->toDateString();
+        $today = LocalDate::today();
 
         foreach ($candidates as $candidate) {
             $date = $candidate['quiz_date'] ?? null;

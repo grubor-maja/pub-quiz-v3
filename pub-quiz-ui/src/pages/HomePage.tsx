@@ -22,7 +22,7 @@ const TABS: { key: Tab; label: string }[] = [
 ]
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const { state, update, clear } = useQuizFilters()
   const { pos } = useGeo()
@@ -37,9 +37,11 @@ export default function HomePage() {
   }, [searchInput, state.search, update])
 
   // The "Pratim" tab needs an account; a visitor who logs out falls back to all quizzes.
+  // Not before the session is known: while it loads there is no user yet, and
+  // a shared ?tab=pratim link was switched to Predstojeći on every page load.
   useEffect(() => {
-    if (!user && state.tab === 'pratim') update({ tab: 'predstojeci' })
-  }, [user, state.tab, update])
+    if (!authLoading && !user && state.tab === 'pratim') update({ tab: 'predstojeci' })
+  }, [authLoading, user, state.tab, update])
 
   const { data: orgs } = useQuery({ queryKey: ['organizations'], queryFn: fetchOrganizations, staleTime: 5 * 60 * 1000 })
 

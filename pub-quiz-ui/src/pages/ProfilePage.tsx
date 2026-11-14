@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const [pastOpen, setPastOpen] = useState(false)
 
-  useSeo({ title: 'Moj profil', description: 'Sačuvani kvizovi i organizatori koje pratiš.', path: '/profil' })
+  useSeo({ title: 'Omiljeni', description: 'Sačuvani kvizovi i organizatori koje pratiš.', path: '/profil' })
 
   const { data: favorites, isLoading, isError } = useQuery({ queryKey: ['favorites'], queryFn: fetchFavorites, enabled: !!user })
   const { data: subscribedOrgs } = useQuery({ queryKey: ['subscriptions'], queryFn: fetchSubscriptions, enabled: !!user })
@@ -45,7 +45,7 @@ export default function ProfilePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
           <span className="display" aria-hidden="true" style={{ width: 72, height: 72, flex: 'none', borderRadius: '50%', background: 'var(--lime)', color: 'var(--on-lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>{initial}</span>
           <div style={{ minWidth: 0 }}>
-            <h1 className="display" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.03em' }}>Moj profil</h1>
+            <h1 className="display" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.03em' }}>Omiljeni</h1>
             <p style={{ fontSize: 15, color: 'var(--text-muted)', overflowWrap: 'anywhere' }}>{user?.name} · {user?.email}</p>
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function ProfilePage() {
       <section>
         <div className="section-heading">
           <h2 className="display" style={{ fontSize: 26, fontWeight: 700 }}>Organizatori koje pratiš</h2>
-          <Link to="/organizacije" style={{ fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>Pronađi još →</Link>
+          <Link to="/organizacije" className="tap-link" style={{ fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>Pronađi još →</Link>
         </div>
         {!subscribedOrgs || subscribedOrgs.length === 0 ? (
           <EmptyState title="Još ne pratiš nijednog organizatora" text="Zaprati ih i njihovi kvizovi će ti biti u tabu „Pratim“ na početnoj." action={<Link to="/organizacije" className="btn btn-primary">Upoznaj organizatore</Link>} />

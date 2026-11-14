@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CalendarPlus, Clock, Coins, MapPin, Phone, Users, Calendar } from 'lucide-react'
 import { Instagram } from '../components/icons'
 import { fetchOrganization, fetchQuiz } from '../api'
-import { cleanTitle, formatDate, formatPrice, formatTime, longDate, relativeDay, shortDate, teamSizeLong, todayIso } from '../lib/utils'
+import { cleanTitle, formatDate, formatPrice, formatTime, longDate, placeLabel, relativeDay, shortDate, teamSizeLong, todayIso } from '../lib/utils'
 import { accentOf, tint } from '../lib/dragon'
 import { useSeo, BASE_URL } from '../lib/useSeo'
 import HeartButton from '../components/HeartButton'
@@ -40,6 +40,7 @@ function buildEventJsonLd(quiz: Quiz) {
       address: {
         '@type': 'PostalAddress',
         streetAddress: quiz.address ?? undefined,
+        addressLocality: quiz.city ?? undefined,
         addressCountry: 'RS',
       },
     },
@@ -136,7 +137,7 @@ export default function QuizDetailPage() {
   const phone = quiz.contact_phone
   const lat = quiz.latitude != null ? Number(quiz.latitude) : null
   const lng = quiz.longitude != null ? Number(quiz.longitude) : null
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([quiz.location, quiz.address].filter(Boolean).join(', '))}`
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([quiz.location, quiz.address, quiz.city].filter(Boolean).join(', '))}`
   const more = (orgData?.quizzes ?? [])
     .filter(q => q.slug !== quiz.slug && (q.quiz_date ?? '').slice(0, 10) >= todayIso())
     .sort((a, b) => (a.quiz_date ?? '').localeCompare(b.quiz_date ?? ''))
@@ -222,7 +223,7 @@ export default function QuizDetailPage() {
                   icon={<MapPin size={18} />}
                   label="Lokacija"
                   value={<a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--lime)', textDecoration: 'none' }}>{quiz.location ?? quiz.address}</a>}
-                  sub={quiz.location && quiz.address ? quiz.address : undefined}
+                  sub={[quiz.location && quiz.address ? quiz.address : null, quiz.city].filter(Boolean).join(', ') || undefined}
                 />
               )}
               <Fact icon={<Coins size={18} />} label="Kotizacija" value={quiz.entry_fee != null ? formatPrice(quiz.entry_fee) : 'Info u objavi'} />
@@ -237,13 +238,13 @@ export default function QuizDetailPage() {
                 </a>
               )}
               {quiz.instagram_post_url && (
-                <a href={quiz.instagram_post_url} target="_blank" rel="noopener noreferrer" className={`btn ${phone && !over ? 'btn-secondary' : 'btn-primary'}`}>
-                  <Instagram size={18} />{phone && !over ? <span className="only-desktop">Instagram objava</span> : 'Instagram objava'}
+                <a href={quiz.instagram_post_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram objava" className={`btn ${phone && !over ? 'btn-secondary' : 'btn-primary'}`}>
+                  <Instagram size={18} aria-hidden="true" />{phone && !over ? <><span className="only-desktop">Instagram objava</span><span className="only-mobile">Objava</span></> : 'Instagram objava'}
                 </a>
               )}
               {quiz.quiz_date && !cancelled && !over && (
                 <a href={`/api/quizzes/${quiz.slug}/calendar.ics`} target="_blank" rel="noopener" className="btn btn-secondary" aria-label="Dodaj u kalendar">
-                  <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span>
+                  <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span><span className="only-mobile">Kalendar</span>
                 </a>
               )}
               <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={20} style={{ width: 48, height: 48, borderRadius: 14 }} />
@@ -267,7 +268,7 @@ export default function QuizDetailPage() {
                 position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 500, padding: '12px 14px', borderRadius: 14,
                 background: 'rgba(7,8,24,0.88)', backdropFilter: 'blur(8px)', color: 'var(--text-primary)', textDecoration: 'none',
               }}>
-                <span style={{ display: 'block', fontWeight: 700 }}>{quiz.location ?? quiz.address}</span>
+                <span style={{ display: 'block', fontWeight: 700 }}>{placeLabel(quiz)}</span>
                 <span style={{ display: 'block', fontSize: 14, color: 'var(--text-muted)' }}>Otvori u Google mapama →</span>
               </a>
             </div>
@@ -293,7 +294,7 @@ export default function QuizDetailPage() {
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, paddingTop: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lime)' }}>{shortDate(q.quiz_date)}{q.quiz_time ? ` · ${formatTime(q.quiz_time)}` : ''}</span>
                     <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{cleanTitle(q.title)}</span>
-                    {q.location && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{q.location}</span>}
+                    {placeLabel(q) && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{placeLabel(q)}</span>}
                   </span>
                 </Link>
               ))}

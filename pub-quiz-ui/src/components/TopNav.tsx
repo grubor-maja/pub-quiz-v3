@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarCog, Heart, History, LogOut, ShieldCheck, User as UserIcon, Users } from 'lucide-react'
+import { CalendarCog, Heart, History, LogOut, ShieldCheck, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 import Zmaj from './Zmaj'
 import { useAuth } from '../context/AuthContext'
@@ -94,8 +94,7 @@ function AccountMenu() {
             <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
           </div>
-          <Link to="/profil" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><UserIcon size={16} /> Moj profil</span></Link>
-          <Link to="/profil" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Heart size={16} /> Omiljeni kvizovi</span></Link>
+          <Link to="/profil" className="menu-item" role="menuitem" onClick={() => setOpen(false)}><span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Heart size={16} /> Omiljeni</span></Link>
           {user.is_admin ? (
             <>
               <MenuHeading>ADMIN</MenuHeading>
