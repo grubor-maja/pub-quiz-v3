@@ -247,12 +247,12 @@ export default function QuizDetailPage() {
               )}
               {quiz.instagram_post_url && (
                 <a href={quiz.instagram_post_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram objava" className={`btn ${phone && !over ? 'btn-secondary' : 'btn-primary'}`}>
-                  <Instagram size={18} aria-hidden="true" />{phone && !over ? <><span className="only-desktop">Instagram objava</span><span className="only-mobile">Objava</span></> : 'Instagram objava'}
+                  <Instagram size={18} aria-hidden="true" />{phone && !over ? <><span className="only-desktop">Instagram objava</span><span className="only-mobile btn-label">Objava</span></> : <><span className="only-desktop">Instagram objava</span><span className="only-mobile">Instagram</span></>}
                 </a>
               )}
               {quiz.quiz_date && !cancelled && !over && (
                 <a href={`/api/quizzes/${quiz.slug}/calendar.ics`} target="_blank" rel="noopener" className="btn btn-secondary" aria-label="Dodaj u kalendar">
-                  <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span><span className="only-mobile">Kalendar</span>
+                  <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span><span className="only-mobile btn-label">Kalendar</span>
                 </a>
               )}
               <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={20} style={{ width: 48, height: 48, borderRadius: 14 }} />

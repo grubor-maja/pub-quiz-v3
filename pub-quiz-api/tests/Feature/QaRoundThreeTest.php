@@ -97,4 +97,19 @@ class QaRoundThreeTest extends TestCase
         $this->putJson("/api/admin/quizzes/{$quiz->id}", ['city' => 'Sremski Karlovci'])->assertOk();
         $this->assertDatabaseHas('quizzes', ['id' => $quiz->id, 'city' => 'Sremski Karlovci']);
     }
+
+    public function test_calendar_file_has_no_invented_end_or_start_time(): void
+    {
+        $this->quiz('2026-12-03', ['slug' => 'sa-vremenom', 'quiz_time' => '19:45:00']);
+        $this->quiz('2026-12-04', ['slug' => 'bez-vremena', 'quiz_time' => null]);
+
+        $ics = $this->get('/api/quizzes/sa-vremenom/calendar.ics')->assertOk()->getContent();
+        $this->assertStringContainsString('DTSTART;TZID=Europe/Belgrade:20261203T194500', $ics);
+        $this->assertStringNotContainsString('DTEND', $ics);
+
+        $ics = $this->get('/api/quizzes/bez-vremena/calendar.ics')->assertOk()->getContent();
+        $this->assertStringContainsString('DTSTART;VALUE=DATE:20261204', $ics);
+        $this->assertStringNotContainsString('190000', $ics);
+        $this->assertStringNotContainsString('DTEND', $ics);
+    }
 }
