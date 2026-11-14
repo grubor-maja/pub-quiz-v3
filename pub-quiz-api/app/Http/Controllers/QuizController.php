@@ -189,19 +189,22 @@ class QuizController extends Controller
     {
         $quiz = Quiz::published()->with('organization:id,name,slug')->where('slug', $slug)->firstOrFail();
 
-        // Build datetime in Europe/Belgrade tz. Fall back to 19:00 if no time.
+        // Only what the organizer announced. No end time: posts never state
+        // one, and the "start + 2h" this used to add showed up in calendars as
+        // if it were real. With no announced time either, it is an all-day
+        // event on that date rather than an invented 19:00.
         $tz = 'Europe/Belgrade';
         $date = $quiz->quiz_date instanceof \DateTimeInterface
             ? $quiz->quiz_date->format('Y-m-d')
             : (string) $quiz->quiz_date;
         $time = $quiz->quiz_time instanceof \DateTimeInterface
             ? $quiz->quiz_time->format('H:i:s')
-            : ((string) $quiz->quiz_time ?: '19:00:00');
+            : (string) $quiz->quiz_time;
 
-        $start = new \DateTime("{$date} {$time}", new \DateTimeZone($tz));
-        $end = (clone $start)->modify('+2 hours');
+        $when = $time !== ''
+            ? ["DTSTART;TZID={$tz}:" . (new \DateTime("{$date} {$time}", new \DateTimeZone($tz)))->format('Ymd\THis')]
+            : ['DTSTART;VALUE=DATE:' . str_replace('-', '', $date)];
 
-        $fmt = fn (\DateTime $dt) => $dt->format('Ymd\THis');
         $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z');
 
         // Escape per RFC 5545: backslash, comma, semicolon, newline
@@ -239,10 +242,9 @@ class QuizController extends Controller
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             'BEGIN:VEVENT',
-            "UID:{$quiz->id}@koznazna.me",
+            "UID:{$quiz->id}@koznazna.me", // old domain on purpose: changing it would duplicate events already imported
             "DTSTAMP:{$now}",
-            "DTSTART;TZID={$tz}:" . $fmt($start),
-            "DTEND;TZID={$tz}:" . $fmt($end),
+            ...$when,
             'SUMMARY:' . $esc($quiz->title),
             'DESCRIPTION:' . $esc($description),
             'LOCATION:' . $esc($location),

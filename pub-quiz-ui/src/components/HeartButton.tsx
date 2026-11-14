@@ -6,6 +6,7 @@ import { addFavorite, removeFavorite } from '../api'
 import { useAuth } from '../context/AuthContext'
 import type { InfiniteData } from '@tanstack/react-query'
 import type { PaginatedResponse, Quiz } from '../types'
+import { tapFeedback } from '../lib/haptics'
 
 type QuizList = PaginatedResponse<Quiz> | InfiniteData<PaginatedResponse<Quiz>>
 
@@ -103,6 +104,8 @@ export default function HeartButton({
       return
     }
 
+    // A buzz when saving, not when removing: the confirmation is for the new save.
+    if (!isFavorited) tapFeedback()
     setPopping(true)
     setTimeout(() => setPopping(false), 220)
     mutation.mutate(!isFavorited)

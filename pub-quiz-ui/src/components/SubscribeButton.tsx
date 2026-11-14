@@ -5,6 +5,7 @@ import { subscribeOrg, unsubscribeOrg } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/toast'
 import { OrgBadge } from './OrgBadge'
+import { tapFeedback } from '../lib/haptics'
 import type { Organization } from '../types'
 
 interface Props {
@@ -64,6 +65,7 @@ export default function SubscribeButton({ slug, isSubscribed, org, size = 'md', 
       navigate('/login')
       return
     }
+    if (!isSubscribed) tapFeedback()
     mutation.mutate(!isSubscribed)
   }
 

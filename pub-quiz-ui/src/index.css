@@ -551,8 +551,17 @@ a, button, [role="button"], input, textarea, select,
     border-top: 1px solid var(--border-subtle);
     flex-wrap: nowrap;
   }
-  .detail-actions.sticky-mobile .btn { flex: 1; min-height: 48px; }
+  /* Buttons may shrink below their text width (min-width: 0); without it the
+     row overflowed and the heart was pushed off the right edge. */
+  .detail-actions.sticky-mobile { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .detail-actions.sticky-mobile .btn { flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 0 12px; white-space: nowrap; overflow: hidden; }
+  .detail-actions.sticky-mobile .btn-primary { flex-grow: 2; }
+  .detail-actions.sticky-mobile > :not(.btn) { flex: none; }
   .detail-actions.sticky-mobile .icon-btn { width: 48px; height: 48px; }
+  /* With four actions (call, post, calendar, heart) the secondary ones keep
+     only their icon; aria-label still names them. */
+  .detail-actions.sticky-mobile:has(> :nth-child(4)) .btn-secondary { flex: none; width: 48px; padding: 0; }
+  .detail-actions.sticky-mobile:has(> :nth-child(4)) .btn-secondary .btn-label { display: none; }
   .hide-on-detail-mobile { display: none !important; }
 }
 
