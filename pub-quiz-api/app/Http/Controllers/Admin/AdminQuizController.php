@@ -172,6 +172,7 @@ class AdminQuizController extends Controller
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:80'],
             'entry_fee' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'min_team_members' => ['nullable', 'integer', 'min:1', 'max:255'],
             'max_team_members' => ['nullable', 'integer', 'min:1', 'max:255'],

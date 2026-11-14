@@ -43,9 +43,16 @@ class Format
         return $time ? substr($time, 0, 5) : null;
     }
 
-    public static function cena(?int $amount): string
+    /**
+     * The fee, or null when the post did not state one. A missing fee is
+     * unknown, not free, so callers leave the field out.
+     */
+    public static function cena(?int $amount): ?string
     {
         if ($amount === null) {
+            return null;
+        }
+        if ($amount === 0) {
             return 'Besplatno';
         }
 

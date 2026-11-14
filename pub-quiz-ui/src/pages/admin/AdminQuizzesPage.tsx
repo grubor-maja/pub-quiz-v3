@@ -28,7 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 function clean(draft: Draft): Record<string, unknown> {
   const keep = [
     'organization_id', 'title', 'quiz_date', 'quiz_time', 'description',
-    'location', 'address', 'entry_fee', 'min_team_members', 'max_team_members',
+    'location', 'address', 'city', 'entry_fee', 'min_team_members', 'max_team_members',
     'contact_phone', 'cover_image_url', 'instagram_post_url', 'status',
   ]
   const out: Record<string, unknown> = {}
@@ -162,7 +162,7 @@ export default function AdminQuizzesPage() {
                   {q.quiz_date?.slice(0, 10) ?? 'bez datuma'}
                   {q.quiz_time ? ` · ${q.quiz_time.slice(0, 5)}` : ''}
                   {` · ${q.organization?.name ?? ''}`}
-                  {q.location ? ` · ${q.location}` : ''}
+                  {q.location ? ` · ${q.location}` : ''}{q.city ? `, ${q.city}` : ''}
                 </div>
               </div>
               <span style={{
@@ -240,6 +240,9 @@ export default function AdminQuizzesPage() {
               </Field>
               <Field label="Adresa" error={errors.address}>
                 <input style={inputStyle} value={draft.address ?? ''} onChange={e => set('address', e.target.value)} />
+              </Field>
+              <Field label="Grad" hint="Prazno = popunjava se sam iz lokacije na mapi" error={errors.city}>
+                <input style={inputStyle} value={draft.city ?? ''} onChange={e => set('city', e.target.value)} placeholder="npr. Novi Sad" />
               </Field>
               <Field label="Kotizacija" hint="Prazno = besplatno" error={errors.entry_fee}>
                 <input style={inputStyle} type="number" value={draft.entry_fee ?? ''} onChange={e => set('entry_fee', e.target.value === '' ? null : Number(e.target.value))} />

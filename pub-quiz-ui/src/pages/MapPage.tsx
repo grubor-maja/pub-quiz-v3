@@ -12,7 +12,7 @@ import { OrgBadge } from '../components/OrgBadge'
 import EmptyState from '../components/EmptyState'
 import OrgMultiSelect from '../components/OrgMultiSelect'
 import type { Quiz } from '../types'
-import { addDays, cleanTitle, endOfWeekIso, formatTime, kvizWord, relativeDay, todayIso, weekendIso } from '../lib/utils'
+import { addDays, cleanTitle, endOfWeekIso, formatTime, kvizWord, placeLabel, relativeDay, todayIso, weekendIso } from '../lib/utils'
 import { useGeo } from '../lib/useGeo'
 import { useSeo } from '../lib/useSeo'
 
@@ -86,6 +86,15 @@ export default function MapPage() {
   const [radius, setRadius] = useState<number | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const geo = useGeo()
+  const mapAreaRef = useRef<HTMLElement>(null)
+
+  // On a phone the map sits above the list, so picking a quiz further down
+  // moved the map and opened its card off screen, and the tap looked dead.
+  // Bring the map back into view with the card in it.
+  const pickFromList = (id: string) => {
+    setSelected(id)
+    if (window.innerWidth < 900) mapAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // On desktop the page fills exactly the window below the nav: the list
   // scrolls on its own and the selected-quiz card in the map's corner is
@@ -187,7 +196,7 @@ export default function MapPage() {
           {quizzes.map(q => {
             const on = q.id === selected
             return (
-              <button key={q.id} type="button" onClick={() => setSelected(q.id)} aria-pressed={on} style={{
+              <button key={q.id} type="button" onClick={() => pickFromList(q.id)} aria-pressed={on} style={{
                 display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 12px', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                 background: on ? 'rgba(182,242,62,0.08)' : 'transparent', border: `1px solid ${on ? 'rgba(182,242,62,0.4)' : 'var(--border-subtle)'}`, color: 'var(--text-primary)',
               }}>
@@ -195,7 +204,7 @@ export default function MapPage() {
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 15, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cleanTitle(q.title)}</span>
                   <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {relativeDay(q.quiz_date)}{q.quiz_time ? ` ${formatTime(q.quiz_time)}` : ''} · {q.location ?? q.address}
+                    {relativeDay(q.quiz_date)}{q.quiz_time ? ` ${formatTime(q.quiz_time)}` : ''} · {placeLabel(q)}
                   </span>
                 </span>
               </button>
@@ -207,7 +216,7 @@ export default function MapPage() {
         )}
       </aside>
 
-      <section aria-label="Mapa" className="map-area" style={{ flex: '999 1 560px', position: 'relative' }}>
+      <section ref={mapAreaRef} aria-label="Mapa" className="map-area" style={{ flex: '999 1 560px', position: 'relative', scrollMarginTop: 72 }}>
         {isError ? (
           <div style={{ padding: 60 }}><EmptyState title="Mapa nije učitana" text="Probaj ponovo za koji trenutak." /></div>
         ) : (
@@ -246,7 +255,7 @@ export default function MapPage() {
                 {relativeDay(sel.quiz_date)}{sel.quiz_time ? ` · ${formatTime(sel.quiz_time)}` : ''}
               </span>
               <span className="display" style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.15 }}>{cleanTitle(sel.title)}</span>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{sel.organization.name} · {sel.location ?? sel.address}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{sel.organization.name} · {placeLabel(sel)}</span>
               <Link to={`/kvizovi/${sel.slug}`} style={{ marginTop: 'auto', fontSize: 14, fontWeight: 700, color: 'var(--lime)', textDecoration: 'none' }}>Detalji →</Link>
             </div>
             <button type="button" className="icon-btn" aria-label="Zatvori" onClick={() => setSelected(null)} style={{ width: 36, height: 36, flex: 'none' }}><X size={16} /></button>

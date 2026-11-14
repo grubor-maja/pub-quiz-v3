@@ -100,8 +100,10 @@ export function formatTime(timeStr: string | null): string {
   return timeStr.slice(0, 5)
 }
 
+/** The fee. Callers skip it when null: an unstated fee is unknown, not free. */
 export function formatPrice(amount: number | null): string {
-  if (amount === null || amount === undefined) return 'Besplatno'
+  if (amount === null || amount === undefined) return 'Info u objavi'
+  if (amount === 0) return 'Besplatno'
   return `${amount.toLocaleString('sr-Latn-RS')} din`
 }
 
@@ -144,4 +146,25 @@ export function teamSizeLong(min: number | null, max: number | null): string | n
   if (min) return `min. ${min} ${clanWord(min)}`
   if (max) return `do ${max} ${clanWord(max)}`
   return null
+}
+
+/**
+ * An organizer's name without the "Pab Kviz" most of them start with, for
+ * tight spots like a card: four of five read "Pab Kviz…" when truncated,
+ * which says nothing about whose quiz it is. The full name stays everywhere
+ * there is room for it.
+ */
+export function shortOrgName(name: string): string {
+  const short = name.replace(/^\s*(pab|pub)\s+(kviz|quiz)\s+/i, '').trim()
+  return short.length >= 2 ? short : name
+}
+
+/** "Radio Cafe · Novi Sad": the venue, and the city unless the venue already names it. */
+export function placeLabel(q: { location?: string | null; address?: string | null; city?: string | null }): string {
+  const place = q.location || q.address || ''
+  const city = q.city?.trim()
+  if (!city) return place
+  if (!place) return city
+  const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return fold(`${q.location ?? ''} ${q.address ?? ''}`).includes(fold(city)) ? place : `${place} · ${city}`
 }

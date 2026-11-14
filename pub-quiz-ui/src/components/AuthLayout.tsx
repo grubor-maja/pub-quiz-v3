@@ -2,14 +2,18 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import Zmaj from './Zmaj'
 
+type Raspolozenje = 'skriva' | 'ljut' | 'srecan'
+
 interface Props {
   /** Shows the Prijava / Registracija switch above the form. */
   mode?: 'login' | 'register'
+  /** The dragons' mood, driven by the form (see LoginPage). */
+  raspolozenje?: Raspolozenje
   children: ReactNode
 }
 
 /** Login, registration and password pages: three dragons on the left, the form on the right. */
-export default function AuthLayout({ mode, children }: Props) {
+export default function AuthLayout({ mode, raspolozenje, children }: Props) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 'calc(100vh - 64px)' }}>
       <section className="only-desktop" style={{
@@ -26,19 +30,19 @@ export default function AuthLayout({ mode, children }: Props) {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end' }} aria-hidden="true">
-          <span className="anim-up" style={{ animationDelay: '0.2s' }}><Zmaj boja="tirkiz" rekvizit="lopta" majica="plava" size={150} /></span>
-          <span className="anim-up" style={{ animationDelay: '0.35s', marginLeft: -20 }}><Zmaj size={190} /></span>
-          <span className="anim-up" style={{ animationDelay: '0.5s', marginLeft: -20 }}><Zmaj boja="koral" rekvizit="sijalica" majica="bela" size={150} /></span>
+          <span className="anim-up" style={{ animationDelay: '0.2s' }}><Zmaj boja="tirkiz" rekvizit="lopta" majica="plava" size={150} gleda raspolozenje={raspolozenje} /></span>
+          <span className="anim-up" style={{ animationDelay: '0.35s', marginLeft: -20 }}><Zmaj size={190} gleda raspolozenje={raspolozenje} /></span>
+          <span className="anim-up" style={{ animationDelay: '0.5s', marginLeft: -20 }}><Zmaj boja="koral" rekvizit="sijalica" majica="bela" size={150} gleda raspolozenje={raspolozenje} /></span>
         </div>
         </div>
       </section>
 
-      <section style={{ flex: '1 1 440px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px 120px' }}>
-        <div className="anim-up" style={{
+      <section className="auth-form-area" style={{ flex: '1 1 440px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px 120px' }}>
+        <div className="anim-up auth-card" style={{
           width: '100%', maxWidth: 440, padding: 28, borderRadius: 26, background: 'rgba(17,19,46,0.9)',
           border: '1px solid var(--border-default)', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.7)', animationDelay: '0.1s',
         }}>
-          <div className="only-mobile" style={{ justifyContent: 'center', marginBottom: 8 }}><Zmaj size={110} /></div>
+          <div className="only-mobile" style={{ justifyContent: 'center', marginBottom: 8 }}><Zmaj size={110} gleda raspolozenje={raspolozenje} /></div>
           {mode && (
             <nav aria-label="Prijava ili registracija" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: 5, borderRadius: 14, background: 'rgba(7,8,24,0.7)', marginBottom: 20 }}>
               {([['login', '/login', 'Prijava'], ['register', '/register', 'Registracija']] as const).map(([key, to, label]) => (

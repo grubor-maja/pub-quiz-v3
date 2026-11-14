@@ -54,13 +54,16 @@ export default function HomeHero({ onShowAll }: { onShowAll: (kada: Kada) => voi
   const layout = LAYOUTS[fan.length] ?? []
 
   return (
-    <section style={{ display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', padding: '40px 0 36px', position: 'relative' }}>
+    // On a phone the hero shrinks to a heading and a button (index.css,
+    // .home-hero): it used to fill the first screen, so no quiz was visible
+    // without scrolling.
+    <section className="home-hero" style={{ display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', padding: '40px 0 36px', position: 'relative' }}>
       <span aria-hidden="true" className="float-shape" style={{ position: 'absolute', left: '44%', top: 24, width: 26, height: 26, borderRadius: '50%', border: '3px solid #A78BFA', opacity: 0.6 }} />
       <span aria-hidden="true" className="float-shape" style={{ position: 'absolute', left: '4%', bottom: 0, width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderBottom: '24px solid rgba(182,242,62,0.5)', ['--r' as string]: '20deg', animationDelay: '1.5s' }} />
       <span aria-hidden="true" className="float-shape" style={{ position: 'absolute', right: '3%', top: 10, width: 18, height: 18, borderRadius: 5, background: 'rgba(167,139,250,0.55)', ['--r' as string]: '30deg', animationDelay: '0.8s' }} />
 
       <div style={{ flex: '1 1 460px', minWidth: 0, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div className="anim-up only-desktop"><Zmaj size={190} /></div>
+        <div className="anim-up only-desktop"><Zmaj size={190} gleda /></div>
         <div style={{ flex: '1 1 260px', minWidth: 0 }}>
           <span className="anim-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, background: 'var(--lime-soft)', color: 'var(--lime-light)', fontSize: 13, fontWeight: 600 }}>
             <span className="live-dot" />{todayHeading()}
@@ -118,22 +121,6 @@ export default function HomeHero({ onShowAll }: { onShowAll: (kada: Kada) => voi
         </div>
       )}
 
-      {fan.length > 0 && (
-        <div className="only-mobile h-scroll" style={{ width: '100%', gap: 12, paddingBottom: 6, scrollSnapType: 'x mandatory' }}>
-          {fan.map(q => (
-            <Link key={q.id} to={`/kvizovi/${q.slug}`} style={{ position: 'relative', width: 230, aspectRatio: '4 / 5', borderRadius: 20, overflow: 'hidden', scrollSnapAlign: 'start', color: 'var(--text-primary)', textDecoration: 'none', background: '#11132E' }}>
-              {q.cover_image_url
-                ? <img src={q.cover_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zmaj size={110} animated={false} /></div>}
-              <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(7,8,24,0) 40%, rgba(7,8,24,0.95))' }} />
-              <span style={{ position: 'absolute', left: 12, right: 12, bottom: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--lime)' }}>{formatTime(q.quiz_time)}{q.quiz_time ? ' · ' : ''}{q.organization.name}</span>
-                <span className="display" style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.15 }}>{cleanTitle(q.title)}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
     </section>
   )
 }

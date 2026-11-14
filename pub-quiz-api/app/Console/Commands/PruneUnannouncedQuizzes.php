@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\LocalDate;
 use App\Models\Quiz;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class PruneUnannouncedQuizzes extends Command
         $favorited = DB::table('favorites')->distinct()->pluck('quiz_id')->all();
 
         $quizzes = Quiz::whereNull('cover_image_url')
-            ->whereDate('quiz_date', '>=', now()->toDateString())
+            ->whereDate('quiz_date', '>=', LocalDate::today())
             ->whereNotIn('id', $favorited)
             ->with('organization:id,name,slug')
             ->when($orgSlug, fn ($q) => $q->whereHas('organization', fn ($o) => $o->where('slug', $orgSlug)))

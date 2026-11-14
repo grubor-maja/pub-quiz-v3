@@ -147,6 +147,42 @@ a, button, [role="button"], input, textarea, select,
 @keyframes z-blink { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.1); } }
 @keyframes z-bulb { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 
+/* Dragons with gleda: pupils follow the mouse (--lx/--ly set by useDragonEyes),
+   the glasses follow a little less, which reads as the head turning. The fixed
+   4s blink is swapped for one the hook triggers at random. */
+.zmaj-gleda .z-look { transform: translate(calc(var(--lx, 0) * 1px), calc(var(--ly, 0) * 1px)); transition: transform 0.18s ease-out; }
+.zmaj-gleda .z-turn { transform: translate(calc(var(--lx, 0) * 0.4px), calc(var(--ly, 0) * 0.3px)); transition: transform 0.35s ease-out; }
+.zmaj-gleda .z-blink { animation: none; }
+.zmaj-gleda.z-blinking .z-blink { animation: z-blink-once 0.17s ease-in-out; }
+@keyframes z-blink-once { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+
+/* Moods, for the login form (raspolozenje on <Zmaj>). skriva: wings rise over
+   the glasses. ljut: frown, head shake, smoke from the nostrils. srecan:
+   happy closed eyes, hops, waves fast. */
+.z-happy { opacity: 0; }
+.z-cover { opacity: 0; transform: translateY(50px); transition: transform 0.35s var(--ease-bounce), opacity 0.2s ease-out; }
+.zmaj-skriva .z-cover { opacity: 1; transform: none; }
+.zmaj-skriva .z-wave { opacity: 0; }
+.zmaj-srecan .z-happy { opacity: 1; }
+.zmaj-srecan .z-look { opacity: 0; }
+.zmaj-anim.zmaj-srecan .z-bob { animation: z-hop 0.5s var(--ease) infinite; }
+.zmaj-anim.zmaj-srecan .z-wave { animation-duration: 0.3s; }
+.zmaj-anim.zmaj-ljut .z-head { animation: z-shake 0.38s ease-in-out 2; }
+.zmaj-ljut .z-smoke circle { transform-box: fill-box; transform-origin: center; animation: z-smoke 1s ease-out infinite; --dx: -10px; }
+.zmaj-ljut .z-smoke circle + circle { --dx: 10px; animation-delay: 0.5s; }
+@keyframes z-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+@keyframes z-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+@keyframes z-smoke { from { opacity: 0.9; transform: translate(0, 0) scale(0.5); } to { opacity: 0; transform: translate(var(--dx), 8px) scale(2); } }
+
+/* Card -> quiz page: the poster grows into place (lib/posterTransition.ts).
+   Both snapshots fill the moving box, so a card poster of a different shape
+   (the phone layout's narrow strip) crops instead of stretching. */
+::view-transition-group(quiz-poster) { animation-duration: 0.45s; animation-timing-function: var(--ease); }
+::view-transition-old(quiz-poster),
+::view-transition-new(quiz-poster) { width: 100%; height: 100%; object-fit: cover; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.25s; }
+
 /* ---------------------------------------------------------------
  * Layout
  * --------------------------------------------------------------- */
@@ -597,3 +633,59 @@ a, button, [role="button"], input, textarea, select,
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ phone fixes
+   From the mobile QA pass (14.11.2026). */
+
+/* The filter sheet is portalled to <body>; the tab bar would still sit over
+   its bottom buttons, so it steps aside while the sheet is open. */
+body.sheet-open .tabbar { display: none !important; }
+.sheet { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+
+/* Quiz card: the "when" line in the body only shows in the phone layout,
+   where the poster is too small for a badge. */
+.quiz-card-when { display: none; align-items: center; }
+
+@media (max-width: 599px) {
+  /* One card per row, poster left and details right: in two columns the
+     organizer and the title were cut off on every card. */
+  .card-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 10px; }
+  .quiz-card { flex-direction: row !important; border-radius: 16px !important; }
+  .quiz-card .quiz-card-media { width: 104px; flex: none; align-self: stretch; aspect-ratio: auto !important; min-height: 130px; }
+  .quiz-card .quiz-card-media svg { width: 78px; height: auto; }
+  .quiz-card .quiz-card-badge,
+  .quiz-card .quiz-card-announced,
+  .quiz-card .quiz-card-time { display: none !important; }
+  .quiz-card .quiz-card-when { display: flex; }
+  .quiz-card .quiz-card-body { padding: 10px 12px 12px !important; gap: 8px !important; }
+  .quiz-card .quiz-card-title { font-size: 16.5px !important; -webkit-line-clamp: 3 !important; }
+
+  /* Organizers: two smaller cards a row instead of one dragon per screen. */
+  .org-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+  .org-card { padding: 14px 10px !important; border-radius: 20px !important; }
+  .org-card .org-card-dragon svg { width: 112px; height: auto; }
+  .org-card .org-card-halo { width: 100px !important; height: 100px !important; top: 8px !important; }
+  .org-card .org-card-name {
+    font-size: 15px !important; line-height: 20px !important; height: 40px !important;
+    white-space: normal !important; display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 899px) {
+  /* The hero shrinks to its heading and button, so quizzes show on the
+     first screen. */
+  .home-hero { padding: 14px 0 18px !important; gap: 0 !important; }
+  .home-hero h1 { font-size: 30px !important; margin: 10px 0 12px !important; line-height: 1.05 !important; }
+  /* Floating shapes drifted over the tabs and read as rendering glitches. */
+  .float-shape { display: none !important; }
+  /* Auth forms start at the top instead of the middle of a tall page, with
+     a smaller dragon: centered, the register button landed behind the tab bar. */
+  .auth-form-area { align-items: flex-start !important; padding: 14px 12px calc(110px + env(safe-area-inset-bottom, 0px)) !important; }
+  .auth-card { padding: 20px !important; }
+  .auth-card > .only-mobile { display: flex; }
+  .auth-card > .only-mobile svg { width: 72px; height: auto; }
+}
+
+/* Tap targets of at least 44px. */
+.tap-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+.leaflet-touch .leaflet-bar a { width: 44px !important; height: 44px !important; line-height: 44px !important; font-size: 22px !important; }

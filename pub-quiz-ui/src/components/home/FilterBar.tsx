@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { ArrowUpDown, Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import { OrgBadge } from '../OrgBadge'
 import {
@@ -46,9 +47,12 @@ export default function FilterBar({ state, update, clear, orgs, total }: Props) 
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
   }, [open])
 
+  // The sheet-open class hides the bottom tab bar, which would otherwise sit
+  // over the sheet's buttons.
   useEffect(() => {
     document.body.style.overflow = sheet ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    document.body.classList.toggle('sheet-open', sheet)
+    return () => { document.body.style.overflow = ''; document.body.classList.remove('sheet-open') }
   }, [sheet])
 
   const pick = (patch: Partial<FilterState>) => { update(patch); setOpen(null) }
@@ -150,13 +154,15 @@ export default function FilterBar({ state, update, clear, orgs, total }: Props) 
               {a.label} <X size={14} aria-hidden="true" />
             </button>
           ))}
-          <button type="button" onClick={clear} className="btn-ghost" style={{ border: 0, background: 'none', color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer', minHeight: 34 }}>
+          <button type="button" onClick={clear} className="btn-ghost" style={{ border: 0, background: 'none', color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer', minHeight: 44, padding: '0 8px' }}>
             Očisti sve
           </button>
         </div>
       )}
 
-      {sheet && (
+      {/* Portalled to <body>: inside the page, an ancestor's stacking context
+          kept the sheet under the bottom tab bar whatever its z-index. */}
+      {sheet && createPortal(
         <>
           <div className="sheet-backdrop" aria-hidden="true" onClick={() => setSheet(false)} />
           <section className="sheet" role="dialog" aria-modal="true" aria-label="Filteri i sortiranje">
@@ -201,7 +207,8 @@ export default function FilterBar({ state, update, clear, orgs, total }: Props) 
               </button>
             </div>
           </section>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   )

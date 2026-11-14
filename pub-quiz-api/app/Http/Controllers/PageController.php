@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LocalDate;
 use App\Models\Organization;
 use App\Models\Quiz;
 use App\Services\AppShell;
@@ -33,7 +34,7 @@ class PageController extends Controller
     {
         return $this->respond('home', function () {
             $quizzes = Quiz::published()
-                ->whereDate('quiz_date', '>=', today())
+                ->whereDate('quiz_date', '>=', LocalDate::today())
                 ->with('organization:id,name,slug')
                 ->orderBy('quiz_date')
                 ->orderBy('quiz_time')
@@ -131,7 +132,7 @@ class PageController extends Controller
 
         return $this->respond('organization:' . $slug, function () use ($org) {
             $quizzes = $org->publishedQuizzes()
-                ->whereDate('quiz_date', '>=', today())
+                ->whereDate('quiz_date', '>=', LocalDate::today())
                 ->with('organization:id,name,slug')
                 ->orderBy('quiz_date')
                 ->orderBy('quiz_time')
@@ -277,6 +278,7 @@ class PageController extends Controller
                 'address' => array_filter([
                     '@type' => 'PostalAddress',
                     'streetAddress' => $quiz->address,
+                    'addressLocality' => $quiz->city,
                     'addressCountry' => 'RS',
                 ], fn ($v) => $v !== null),
             ], fn ($v) => $v !== null),
@@ -332,6 +334,7 @@ class PageController extends Controller
                 Format::datum($quiz->quiz_date),
                 Format::vreme($quiz->quiz_time) ? Format::vreme($quiz->quiz_time) . 'h' : null,
                 $quiz->location,
+                $quiz->city,
                 $quiz->organization?->name,
                 Format::cena($quiz->entry_fee),
             ]);
@@ -365,6 +368,7 @@ class PageController extends Controller
             'Vreme' => Format::vreme($quiz->quiz_time),
             'Lokacija' => $quiz->location,
             'Adresa' => $quiz->address,
+            'Grad' => $quiz->city,
             'Kotizacija' => Format::cena($quiz->entry_fee),
             'Ekipa' => Format::ekipa($quiz->min_team_members, $quiz->max_team_members),
             'Kontakt' => $quiz->contact_phone,
