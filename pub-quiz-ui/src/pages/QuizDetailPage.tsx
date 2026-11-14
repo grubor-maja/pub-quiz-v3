@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, type ReactNode } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CalendarPlus, Clock, Coins, MapPin, Phone, Users, Calendar } from 'lucide-react'
 import { Instagram } from '../components/icons'
@@ -12,6 +12,7 @@ import SubscribeButton from '../components/SubscribeButton'
 import { OrgBadge, OrgDragon } from '../components/OrgBadge'
 import EmptyState from '../components/EmptyState'
 import type { Quiz } from '../types'
+import { POSTER_NAME } from '../lib/posterTransition'
 
 /**
  * Event markup, which is what lets a listing show the date and venue straight
@@ -65,11 +66,16 @@ const MiniMap = lazy(() => import('../components/MiniMap'))
 
 export default function QuizDetailPage() {
   const { slug } = useParams<{ slug: string }>()
+  // Arriving from a card's poster transition: the card's copy of the quiz
+  // draws the page at once, and the full one replaces it when it arrives.
+  const location = useLocation() as { state?: { preview?: Quiz } | null }
+  const preview = location.state?.preview?.slug === slug ? location.state?.preview : undefined
 
   const { data: quiz, isLoading, isError } = useQuery({
     queryKey: ['quiz', slug],
     queryFn: () => fetchQuiz(slug!),
     enabled: !!slug,
+    placeholderData: preview,
   })
 
   const orgSlug = quiz?.organization.slug
@@ -159,7 +165,9 @@ export default function QuizDetailPage() {
         </Link>
 
         <section className="detail-hero" style={{ marginTop: 16 }}>
-          <div className="detail-poster anim-up">
+          {/* The poster is the shared element of the card transition, so it must
+              be in place at once rather than fading up like the rest. */}
+          <div className={preview ? 'detail-poster' : 'detail-poster anim-up'} style={{ viewTransitionName: POSTER_NAME }}>
             {quiz.cover_image_url ? (
               <img src={quiz.cover_image_url} alt={`Poster: ${title}`} style={{
                 width: '100%', aspectRatio: '4 / 5', objectFit: 'cover', display: 'block', borderRadius: 22,

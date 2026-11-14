@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom'
+import { useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatTime, formatPrice, teamSizeShort, shortDate, isToday, cleanTitle, placeLabel, shortOrgName } from '../lib/utils'
 import { accentOf, tint } from '../lib/dragon'
 import type { Quiz } from '../types'
 import HeartButton from './HeartButton'
 import { OrgBadge, OrgDragon } from './OrgBadge'
+import { canMorph, morphTo } from '../lib/posterTransition'
 
 interface Props {
   quiz: Quiz
@@ -23,6 +25,8 @@ const pill: React.CSSProperties = {
 }
 
 export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
+  const navigate = useNavigate()
+  const mediaRef = useRef<HTMLDivElement>(null)
   const team = teamSizeShort(quiz.min_team_members, quiz.max_team_members)
   const cancelled = quiz.status === 'cancelled'
   const tonight = isToday(quiz.quiz_date) && !cancelled
@@ -37,6 +41,13 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
   return (
     <Link
       to={`/kvizovi/${quiz.slug}`}
+      onClick={(e) => {
+        // The poster grows into the quiz page's poster. The card's data goes
+        // along so that page can draw at once instead of a loading skeleton.
+        if (!mediaRef.current || !canMorph(e)) return
+        e.preventDefault()
+        morphTo(mediaRef.current, () => navigate(`/kvizovi/${quiz.slug}`, { state: { preview: quiz } }))
+      }}
       className="quiz-card anim-up"
       style={{
         display: 'flex',
@@ -50,7 +61,7 @@ export default function QuizCard({ quiz, index = 0, hideOrg = false }: Props) {
         animationDelay: `${Math.min(index, 12) * 0.06}s`,
       }}
     >
-      <div className="quiz-card-media" style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden', filter: cancelled ? 'grayscale(0.9) brightness(0.6)' : undefined }}>
+      <div ref={mediaRef} className="quiz-card-media" style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden', filter: cancelled ? 'grayscale(0.9) brightness(0.6)' : undefined }}>
         {quiz.cover_image_url ? (
           <img className="quiz-card-img" src={quiz.cover_image_url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
