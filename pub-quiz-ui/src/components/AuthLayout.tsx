@@ -26,9 +26,9 @@ export default function AuthLayout({ mode, children }: Props) {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end' }} aria-hidden="true">
-          <span className="anim-up" style={{ animationDelay: '0.2s' }}><Zmaj boja="tirkiz" rekvizit="lopta" majica="plava" size={150} /></span>
-          <span className="anim-up" style={{ animationDelay: '0.35s', marginLeft: -20 }}><Zmaj size={190} /></span>
-          <span className="anim-up" style={{ animationDelay: '0.5s', marginLeft: -20 }}><Zmaj boja="koral" rekvizit="sijalica" majica="bela" size={150} /></span>
+          <span className="anim-up" style={{ animationDelay: '0.2s' }}><Zmaj boja="tirkiz" rekvizit="lopta" majica="plava" size={150} gleda /></span>
+          <span className="anim-up" style={{ animationDelay: '0.35s', marginLeft: -20 }}><Zmaj size={190} gleda /></span>
+          <span className="anim-up" style={{ animationDelay: '0.5s', marginLeft: -20 }}><Zmaj boja="koral" rekvizit="sijalica" majica="bela" size={150} gleda /></span>
         </div>
         </div>
       </section>
@@ -38,7 +38,7 @@ export default function AuthLayout({ mode, children }: Props) {
           width: '100%', maxWidth: 440, padding: 28, borderRadius: 26, background: 'rgba(17,19,46,0.9)',
           border: '1px solid var(--border-default)', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.7)', animationDelay: '0.1s',
         }}>
-          <div className="only-mobile" style={{ justifyContent: 'center', marginBottom: 8 }}><Zmaj size={110} /></div>
+          <div className="only-mobile" style={{ justifyContent: 'center', marginBottom: 8 }}><Zmaj size={110} gleda /></div>
           {mode && (
             <nav aria-label="Prijava ili registracija" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: 5, borderRadius: 14, background: 'rgba(7,8,24,0.7)', marginBottom: 20 }}>
               {([['login', '/login', 'Prijava'], ['register', '/register', 'Registracija']] as const).map(([key, to, label]) => (

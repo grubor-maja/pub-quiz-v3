@@ -1,4 +1,5 @@
-import { useId } from 'react'
+import { useId, useRef } from 'react'
+import { useDragonEyes } from '../lib/useDragonEyes'
 import { PALETTES, SHIRTS, type DragonColor, type DragonProp, type DragonShirt } from '../lib/dragon'
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
   /** 'ceo' draws the whole dragon, 'glava' a head cropped into a circle. */
   oblik?: 'ceo' | 'glava'
   animated?: boolean
+  /** Eyes follow the mouse and blink at random. Meant for the big dragons on the home and login pages. */
+  gleda?: boolean
   title?: string
   className?: string
 }
@@ -29,10 +32,14 @@ export default function Zmaj({
   size = 200,
   oblik = 'ceo',
   animated = true,
+  gleda = false,
   title,
   className = '',
 }: Props) {
   const clipId = useId().replace(/:/g, '')
+  const svgRef = useRef<SVGSVGElement>(null)
+  const looks = gleda && animated
+  useDragonEyes(svgRef, looks)
   const p = PALETTES[boja]
   const [c1, c2, c3, c4, c5] = p.body
   const [h1, h2] = p.horn
@@ -44,13 +51,14 @@ export default function Zmaj({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={head ? '36 6 128 128' : '0 0 200 215'}
       width={size}
       height={height}
       role={title ? 'img' : undefined}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      className={`${animated ? 'zmaj-anim ' : ''}${className}`}
+      className={`${animated ? 'zmaj-anim ' : ''}${looks ? 'zmaj-gleda ' : ''}${className}`}
       style={{ display: 'block', flexShrink: 0 }}
     >
       <defs>
@@ -152,13 +160,15 @@ export default function Zmaj({
               <rect x="88" y="34" width="24" height="9" rx="2" fill="#fff" />
             </g>
           )}
+          <g className="z-turn">
           <path d="M58 76 L48 72 M142 76 L152 72" stroke="#0A0B1E" strokeWidth="4.5" strokeLinecap="round" />
           <rect x="58" y="65" width="36" height="27" rx="10" fill="#fff" fillOpacity="0.15" stroke="#0A0B1E" strokeWidth="5" />
           <rect x="106" y="65" width="36" height="27" rx="10" fill="#fff" fillOpacity="0.15" stroke="#0A0B1E" strokeWidth="5" />
           <path d="M94 76 Q100 71 106 76" stroke="#0A0B1E" strokeWidth="5" fill="none" />
           {angry && <path d="M60 58 L90 64 M140 58 L110 64" stroke="#0A0B1E" strokeWidth="5" strokeLinecap="round" />}
-          <g className="z-blink"><circle cx="77" cy="79" r="7" fill="#0A0B1E" /><circle cx="79.6" cy="76.4" r="2.4" fill="#fff" /></g>
-          <g className="z-blink"><circle cx="123" cy="79" r="7" fill="#0A0B1E" /><circle cx="125.6" cy="76.4" r="2.4" fill="#fff" /></g>
+          <g className="z-look"><g className="z-blink"><circle cx="77" cy="79" r="7" fill="#0A0B1E" /><circle cx="79.6" cy="76.4" r="2.4" fill="#fff" /></g></g>
+          <g className="z-look"><g className="z-blink"><circle cx="123" cy="79" r="7" fill="#0A0B1E" /><circle cx="125.6" cy="76.4" r="2.4" fill="#fff" /></g></g>
+          </g>
         </g>
       </g>
     </svg>

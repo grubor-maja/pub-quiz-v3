@@ -147,6 +147,15 @@ a, button, [role="button"], input, textarea, select,
 @keyframes z-blink { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.1); } }
 @keyframes z-bulb { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 
+/* Dragons with gleda: pupils follow the mouse (--lx/--ly set by useDragonEyes),
+   the glasses follow a little less, which reads as the head turning. The fixed
+   4s blink is swapped for one the hook triggers at random. */
+.zmaj-gleda .z-look { transform: translate(calc(var(--lx, 0) * 1px), calc(var(--ly, 0) * 1px)); transition: transform 0.18s ease-out; }
+.zmaj-gleda .z-turn { transform: translate(calc(var(--lx, 0) * 0.4px), calc(var(--ly, 0) * 0.3px)); transition: transform 0.35s ease-out; }
+.zmaj-gleda .z-blink { animation: none; }
+.zmaj-gleda.z-blinking .z-blink { animation: z-blink-once 0.17s ease-in-out; }
+@keyframes z-blink-once { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+
 /* ---------------------------------------------------------------
  * Layout
  * --------------------------------------------------------------- */

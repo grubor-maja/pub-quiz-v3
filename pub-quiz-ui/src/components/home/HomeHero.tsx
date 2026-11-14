@@ -60,7 +60,7 @@ export default function HomeHero({ onShowAll }: { onShowAll: (kada: Kada) => voi
       <span aria-hidden="true" className="float-shape" style={{ position: 'absolute', right: '3%', top: 10, width: 18, height: 18, borderRadius: 5, background: 'rgba(167,139,250,0.55)', ['--r' as string]: '30deg', animationDelay: '0.8s' }} />
 
       <div style={{ flex: '1 1 460px', minWidth: 0, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div className="anim-up only-desktop"><Zmaj size={190} /></div>
+        <div className="anim-up only-desktop"><Zmaj size={190} gleda /></div>
         <div style={{ flex: '1 1 260px', minWidth: 0 }}>
           <span className="anim-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 999, background: 'var(--lime-soft)', color: 'var(--lime-light)', fontSize: 13, fontWeight: 600 }}>
             <span className="live-dot" />{todayHeading()}
