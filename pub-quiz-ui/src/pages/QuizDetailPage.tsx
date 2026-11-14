@@ -13,6 +13,7 @@ import { OrgBadge, OrgDragon } from '../components/OrgBadge'
 import EmptyState from '../components/EmptyState'
 import type { Quiz } from '../types'
 import { POSTER_NAME } from '../lib/posterTransition'
+import ShareButton from '../components/ShareButton'
 
 /**
  * Event markup, which is what lets a listing show the date and venue straight
@@ -255,6 +256,7 @@ export default function QuizDetailPage() {
                   <CalendarPlus size={18} aria-hidden="true" /><span className="only-desktop">Dodaj u kalendar</span><span className="only-mobile btn-label">Kalendar</span>
                 </a>
               )}
+              {!cancelled && !over && <ShareButton quiz={quiz} />}
               <HeartButton quizSlug={quiz.slug} isFavorited={quiz.is_favorited ?? false} size={20} style={{ width: 48, height: 48, borderRadius: 14 }} />
             </div>
           </div>
